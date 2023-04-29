@@ -13,16 +13,17 @@ import java.io.IOException;
 import java.util.Date;
 
 public class Client {
-    private Sensor sensor;
-    private final Thread observeThread;
+    private final Sensor sensor;
+    private final Thread connectThread;
     private final Thread sendDataThread;
+    private CoapClient client;
     private long timeInterval = Sensor.DEFAULT_TIME_INTERVAL;
     private long delay = Sensor.DEFAULT_DELAY;
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final MessageMapper messageMapper = new MessageMapper();
     public Client(final Sensor sensor) {
         this.sensor = sensor;
-        this.observeThread = new Thread(this::connectToGateway);
+        this.connectThread = new Thread(this::connectToGateway);
         this.sendDataThread = new Thread(this::sendData);
     }
 
@@ -30,27 +31,22 @@ public class Client {
         return sensor;
     }
 
-    public void setSensor(Sensor sensor) {
-        this.sensor = sensor;
-    }
-
     private static class NodeObserveHandler implements CoapHandler {
         @Override
         public void onLoad(CoapResponse response) {
-
+            System.out.println(response.getResponseText());
         }
 
         @Override
         public void onError() {
-
         }
     }
 
     private void connectToGateway() {
         try {
-            CoapClient client = new CoapClient("coap://localhost:5683/connect");
-            client.post(mapper.writeValueAsString(this.sensor), MediaTypeRegistry.TEXT_PLAIN);
-            client.observe(new NodeObserveHandler());
+            this.client = new CoapClient("coap://localhost:5683/sensors");
+            this.client.post(mapper.writeValueAsString(this.sensor), MediaTypeRegistry.TEXT_PLAIN);
+            this.client.observe(new NodeObserveHandler());
         } catch (ConnectorException | IOException e) {
             e.printStackTrace();
         }
@@ -58,7 +54,6 @@ public class Client {
 
     private void sendData() {
         try {
-            CoapClient client = new CoapClient("coap://localhost:5683/send-data");
             System.out.format("Start send data after %d seconds\n", 1);
             Thread.sleep(1000);
             this.sensor.startGenerateData(this.timeInterval, this.delay);
@@ -66,7 +61,7 @@ public class Client {
             while (System.currentTimeMillis() < endTime) {
                 if (this.sensor.isUpdated()) {
                     final DataMessage dataMessage = messageMapper.apply(sensor);
-                    client.post(mapper.writeValueAsString(dataMessage), MediaTypeRegistry.TEXT_PLAIN);
+                    this.client.put(mapper.writeValueAsString(dataMessage), MediaTypeRegistry.TEXT_PLAIN);
                     this.sensor.setUpdated(false);
                 }
             }
@@ -76,8 +71,8 @@ public class Client {
         }
     }
 
-    public void start() {
-        this.observeThread.start();
+    public void createConnection() {
+        this.connectThread.start();
     }
 
     public void startSendData() {
@@ -100,8 +95,8 @@ public class Client {
         Sensor sensor1 = new Sensor(0.3, new Date(System.currentTimeMillis()));
         Client client = new Client(sensor);
         Client client1 = new Client(sensor1);
-        client.start();
-        client1.start();
+        client.createConnection();
+        client1.createConnection();
         client.startSendData(7000, 1000);
         client1.startSendData(10000);
     }

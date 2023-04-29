@@ -19,13 +19,12 @@ public class Gateway extends CoapServer {
     private static final Map<Long, Sensor> sensors = new HashMap<>();
 
     public Gateway() {
-        this.add(new ConnectResource("connect"));
-        this.add(new SendDataResource("send-data"));
+        this.add(new SensorResource("sensors"));
     }
 
-    private static class ConnectResource extends CoapResource {
+    private static class SensorResource extends CoapResource {
 
-        public ConnectResource(String name) {
+        public SensorResource(String name) {
             super(name);
         }
 
@@ -46,21 +45,17 @@ public class Gateway extends CoapServer {
                 throw new RuntimeException(e);
             }
         }
-    }
-
-    private static class SendDataResource extends CoapResource {
-
-        public SendDataResource(String name) {
-            super(name);
-        }
 
         @Override
-        public void handlePOST(CoapExchange exchange) {
+        public void handlePUT(CoapExchange exchange) {
             exchange.accept();
             byte[] data = exchange.getRequestPayload();
             try {
                 DataMessage message = mapper.readValue(data, DataMessage.class);
-                System.out.println(message);
+                System.out.println("id: " + message.getId() +
+                        ", humidity: " + message.getHumidity() +
+                        ", time: " + message.getTimestamp());
+                // dataQueue.offer(message);
                 exchange.respond(CoAP.ResponseCode.CREATED);
             } catch (IOException e) {
                 throw new RuntimeException(e);
