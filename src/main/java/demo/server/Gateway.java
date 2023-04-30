@@ -2,6 +2,7 @@ package demo.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import demo.client.Sensor;
+import demo.message.ControlMessage;
 import demo.message.DataMessage;
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
@@ -9,6 +10,7 @@ import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,16 +18,22 @@ public class Gateway extends CoapServer {
     private static final int COAP_PORT = 5683;
     private static final long LIMIT = 100;
     private static final ObjectMapper mapper = new ObjectMapper();
-    private static final Map<Long, Sensor> sensors = new HashMap<>();
 
     public Gateway() {
         this.add(new SensorResource("sensors"));
+        this.add(new ControlResource("control"));
     }
 
     private static class SensorResource extends CoapResource {
+        private static final Map<Long, Sensor> sensors = new HashMap<>();
 
         public SensorResource(String name) {
             super(name);
+            this.setObservable(true);
+        }
+
+        @Override
+        public void handleGET(CoapExchange exchange) {
         }
 
         @Override
@@ -34,13 +42,9 @@ public class Gateway extends CoapServer {
             byte[] sensorInfo = exchange.getRequestPayload();
             try {
                 Sensor sensor = mapper.readValue(sensorInfo, Sensor.class);
-                System.out.println(sensor);
+                // System.out.println(sensor);
                 sensors.put(sensor.getId(), sensor);
-//                System.out.println("\nNumber sensor connect: " + sensors.size());
-//                System.out.println("\n\t========= Sensors ==========\n");
-//                for (Sensor s : sensors.values()) {
-//                    System.out.println(s);
-//                }
+                exchange.respond(CoAP.ResponseCode.CREATED, "Connection is created");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -60,6 +64,33 @@ public class Gateway extends CoapServer {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    private static class ControlResource extends CoapResource {
+
+        public ControlResource(String name) {
+            super("control");
+            setObservable(true);
+            setObserveType(CoAP.Type.NON);
+        }
+
+        @Override
+        public void handleGET(CoapExchange exchange) {
+            exchange.respond(CoAP.ResponseCode.CONTENT, getAttributes().getFirstAttributeValue("data"));
+        }
+
+        @Override
+        public void handlePOST(CoapExchange exchange) {
+            byte[] payload = exchange.getRequestPayload();
+            if (payload != null) {
+                getAttributes().addAttribute("data");
+                getAttributes().setAttribute("data", new String(payload, StandardCharsets.UTF_8));
+            }
+
+            exchange.respond(CoAP.ResponseCode.CREATED, payload);
+            changed();
+            getAttributes().clearAttribute("data");
         }
     }
 

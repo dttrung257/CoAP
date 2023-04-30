@@ -22,7 +22,6 @@ public class Sensor {
         this.timestamp = timestamp;
         this.isUpdated = false;
     }
-
     public Sensor(String name, double humidity, Date timestamp) {
         this.id = count++;
         this.name = name;

@@ -5,8 +5,10 @@ import demo.message.DataMessage;
 import demo.utils.MessageMapper;
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
+import org.eclipse.californium.core.CoapObserveRelation;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
+import org.eclipse.californium.core.observe.ObserveRelation;
 import org.eclipse.californium.elements.exception.ConnectorException;
 
 import java.io.IOException;
@@ -14,7 +16,7 @@ import java.util.Date;
 
 public class Client {
     private final Sensor sensor;
-    private final Thread connectThread;
+    private final Thread listenThread;
     private final Thread sendDataThread;
     private CoapClient client;
     private long timeInterval = Sensor.DEFAULT_TIME_INTERVAL;
@@ -23,7 +25,7 @@ public class Client {
     private static final MessageMapper messageMapper = new MessageMapper();
     public Client(final Sensor sensor) {
         this.sensor = sensor;
-        this.connectThread = new Thread(this::connectToGateway);
+        this.listenThread = new Thread(this::connectToGateway);
         this.sendDataThread = new Thread(this::sendData);
     }
 
@@ -31,7 +33,7 @@ public class Client {
         return sensor;
     }
 
-    private static class NodeObserveHandler implements CoapHandler {
+    private static class ClientListener implements CoapHandler {
         @Override
         public void onLoad(CoapResponse response) {
             System.out.println(response.getResponseText());
@@ -39,15 +41,23 @@ public class Client {
 
         @Override
         public void onError() {
+            System.err.println("Failed to receive notification");
         }
     }
 
     private void connectToGateway() {
         try {
             this.client = new CoapClient("coap://localhost:5683/sensors");
-            this.client.post(mapper.writeValueAsString(this.sensor), MediaTypeRegistry.TEXT_PLAIN);
-            this.client.observe(new NodeObserveHandler());
-        } catch (ConnectorException | IOException e) {
+            CoapResponse response = this.client.post(mapper.writeValueAsString(this.sensor), MediaTypeRegistry.TEXT_PLAIN);
+            System.out.println(response.getResponseText());
+            CoapClient listener = new CoapClient("coap://localhost:5683/control");
+            listener.observe(new ClientListener());
+            Thread.sleep(7 * 24 * 3600 * 1000);
+//            while (true) {
+//
+//                Thread.sleep(7 * 24 * 3600 * 1000);
+//            }
+        } catch (ConnectorException | IOException | InterruptedException e) {
             e.printStackTrace();
         }
     }
@@ -72,7 +82,7 @@ public class Client {
     }
 
     public void createConnection() {
-        this.connectThread.start();
+        this.listenThread.start();
     }
 
     public void startSendData() {
