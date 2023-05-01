@@ -4,7 +4,7 @@ import java.util.Date;
 
 public class Sensor {
     private static long count = 0;
-    protected static long DEFAULT_TIME_INTERVAL = 5000;
+    protected static long DEFAULT_TIME_INTERVAL = -1;
     protected static long DEFAULT_DELAY = 1000;
     private long id;
     private String name;

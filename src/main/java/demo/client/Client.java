@@ -97,15 +97,30 @@ public class Client {
             System.out.format("Start send data after %d seconds\n", 1);
             Thread.sleep(1000);
             this.sensor.startGenerateData(this.timeInterval, this.delay);
-            long endTime = System.currentTimeMillis() + (this.timeInterval + 3000);
-            while (System.currentTimeMillis() < endTime) {
-                if (this.sensor.isUpdated()) {
-                    final DataMessage dataMessage = messageMapper.apply(sensor);
-                    this.client.put(mapper.writeValueAsString(dataMessage), MediaTypeRegistry.TEXT_PLAIN);
-                    this.sensor.setUpdated(false);
+            if (this.timeInterval > 0) {
+                long endTime = System.currentTimeMillis() + (this.timeInterval + 3000);
+                while (System.currentTimeMillis() < endTime) {
+                    if (this.sensor.isUpdated()) {
+                        final DataMessage dataMessage = messageMapper.apply(sensor);
+                        this.client.put(mapper.writeValueAsString(dataMessage), MediaTypeRegistry.TEXT_PLAIN);
+                        this.sensor.setUpdated(false);
+                    }
+                }
+            } else if (this.timeInterval == Sensor.DEFAULT_TIME_INTERVAL) {
+                long startTime = System.currentTimeMillis();
+                while (true) {
+                    if (this.sensor.isUpdated()) {
+                        final DataMessage dataMessage = messageMapper.apply(sensor);
+                        this.client.put(mapper.writeValueAsString(dataMessage), MediaTypeRegistry.TEXT_PLAIN);
+                        this.sensor.setUpdated(false);
+                        startTime = System.currentTimeMillis();
+                    }
+                    long currentTime = System.currentTimeMillis();
+                    if (currentTime - startTime > (this.delay + 60000) && !this.sensor.isUpdated()) {
+                        break;
+                    }
                 }
             }
-            this.sendDataThread.interrupt();
         } catch (ConnectorException | IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -137,7 +152,7 @@ public class Client {
         Client client1 = new Client(sensor1);
         client.createConnection();
         client1.createConnection();
-        client.startSendData(3600 * 1000, 500);
-        client1.startSendData(3600 * 1000);
+//        client.startSendData(3600 * 1000, 500);
+//        client1.startSendData(3600 * 1000);
     }
 }
