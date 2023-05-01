@@ -72,7 +72,6 @@ public class Gateway extends CoapServer {
         public ControlResource(String name) {
             super("control");
             setObservable(true);
-            setObserveType(CoAP.Type.NON);
         }
 
         @Override

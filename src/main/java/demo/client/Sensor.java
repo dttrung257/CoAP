@@ -12,6 +12,7 @@ public class Sensor {
     private Date timestamp;
     private boolean isUpdated;
     private Thread generateDataThread;
+    private boolean isRunning;
     public Sensor() {
     }
 
@@ -21,6 +22,7 @@ public class Sensor {
         this.humidity = humidity;
         this.timestamp = timestamp;
         this.isUpdated = false;
+        this.isRunning = true;
     }
     public Sensor(String name, double humidity, Date timestamp) {
         this.id = count++;
@@ -28,6 +30,7 @@ public class Sensor {
         this.humidity = humidity;
         this.timestamp = timestamp;
         this.isUpdated = false;
+        this.isRunning = true;
     }
 
     public long getId() {
@@ -70,6 +73,14 @@ public class Sensor {
         isUpdated = updated;
     }
 
+    public boolean isRunning() {
+        return isRunning;
+    }
+
+    public void setRunning(boolean running) {
+        isRunning = running;
+    }
+
     @Override
     public String toString() {
         return "Sensor{" +
@@ -78,6 +89,8 @@ public class Sensor {
                 ", humidity=" + humidity +
                 ", timestamp=" + timestamp +
                 ", isUpdated=" + isUpdated +
+                ", generateDataThread=" + generateDataThread +
+                ", isRunning=" + isRunning +
                 '}';
     }
 

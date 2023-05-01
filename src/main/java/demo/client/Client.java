@@ -1,14 +1,13 @@
 package demo.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import demo.message.ControlMessage;
 import demo.message.DataMessage;
 import demo.utils.MessageMapper;
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
-import org.eclipse.californium.core.CoapObserveRelation;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
-import org.eclipse.californium.core.observe.ObserveRelation;
 import org.eclipse.californium.elements.exception.ConnectorException;
 
 import java.io.IOException;
@@ -17,7 +16,7 @@ import java.util.Date;
 public class Client {
     private final Sensor sensor;
     private final Thread listenThread;
-    private final Thread sendDataThread;
+    private Thread sendDataThread;
     private CoapClient client;
     private long timeInterval = Sensor.DEFAULT_TIME_INTERVAL;
     private long delay = Sensor.DEFAULT_DELAY;
@@ -34,9 +33,44 @@ public class Client {
     }
 
     private static class ClientListener implements CoapHandler {
+        private final Client client;
+
+        private ClientListener(Client client) {
+            this.client = client;
+        }
+
+        private void start() {
+            this.client.sensor.setRunning(true);
+            this.client.sendDataThread = new Thread(this.client::sendData);
+            this.client.sendDataThread.start();
+        }
+
+        private void stop() {
+            this.client.sensor.setRunning(false);
+        }
+
         @Override
         public void onLoad(CoapResponse response) {
-            System.out.println(response.getResponseText());
+            if (response.getPayload().length > 0 && response.getPayload() != null) {
+                try {
+                    ControlMessage controlMessage = mapper.readValue(response.getPayload(), ControlMessage.class);
+                    System.out.println(controlMessage);
+                    if (controlMessage.getSensorId().equalsIgnoreCase("ALL")
+                            || Integer.parseInt(controlMessage.getSensorId()) == this.client.sensor.getId()) {
+                        String message = controlMessage.getMessage();
+                        switch (message) {
+                            case ControlMessage.START, ControlMessage.RESUME -> start();
+                            case ControlMessage.STOP -> stop();
+                            default -> {
+                            }
+                        }
+                    } else {
+                        return;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
 
         @Override
@@ -51,12 +85,8 @@ public class Client {
             CoapResponse response = this.client.post(mapper.writeValueAsString(this.sensor), MediaTypeRegistry.TEXT_PLAIN);
             System.out.println(response.getResponseText());
             CoapClient listener = new CoapClient("coap://localhost:5683/control");
-            listener.observe(new ClientListener());
+            listener.observe(new ClientListener(this));
             Thread.sleep(7 * 24 * 3600 * 1000);
-//            while (true) {
-//
-//                Thread.sleep(7 * 24 * 3600 * 1000);
-//            }
         } catch (ConnectorException | IOException | InterruptedException e) {
             e.printStackTrace();
         }
@@ -107,7 +137,7 @@ public class Client {
         Client client1 = new Client(sensor1);
         client.createConnection();
         client1.createConnection();
-        client.startSendData(7000, 1000);
-        client1.startSendData(10000);
+        client.startSendData(3600 * 1000, 500);
+        client1.startSendData(3600 * 1000);
     }
 }

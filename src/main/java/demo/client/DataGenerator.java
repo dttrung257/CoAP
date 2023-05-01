@@ -26,7 +26,7 @@ public class DataGenerator implements Runnable {
     @Override
     public void run() {
         final Date endTime = (new Date(System.currentTimeMillis() + this.timeInterval));
-        while ((new Date(System.currentTimeMillis())).before(endTime)) {
+        while ((new Date(System.currentTimeMillis())).before(endTime) && this.sensor.isRunning()) {
             this.sensor.setHumidity((new Random()).nextDouble());
             this.sensor.setTimestamp(new Date());
             this.sensor.setUpdated(true);

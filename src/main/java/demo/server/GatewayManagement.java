@@ -1,44 +1,52 @@
 package demo.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import demo.client.Client;
-import demo.client.Sensor;
+import demo.message.ControlMessage;
 import org.eclipse.californium.core.CoapClient;
-import org.eclipse.californium.core.CoapResource;
-import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.elements.exception.ConnectorException;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
 import java.util.Scanner;
 
 public class GatewayManagement {
+    private static final String NON_NEGATIVE_INTEGER_REGEX = "^[+]?([1-9]\\d*|0)$";
     private static final ObjectMapper mapper = new ObjectMapper();
     public static void main(String[] args) {
-        Gateway gateway = new Gateway();
-        gateway.start();
-        System.out.format("Server is running on port %d\n",
-                gateway.getEndpoints().get(0).getAddress().getPort());
         CoapClient manager = new CoapClient("coap://localhost:5683/control");
         Scanner scanner = new Scanner(System.in);
-        String cmd;
-        int id;
+        String command;
 
         try {
-            do {
-                System.out.print("Sensor ID: ");
-                id = Integer.parseInt(scanner.nextLine());
-                System.out.print("Enter Command: ");
-                cmd = scanner.nextLine();
-
-                if (!cmd.equals("QUIT")) {
-                    String json = mapper.writeValueAsString(id + ", " + cmd);
-                    CoapResponse response = manager.post(json, MediaTypeRegistry.TEXT_PLAIN);
-                    System.out.println("Gateway: " + response.getResponseText());
+            while (true) {
+                System.out.println("Enter sensor id or ALL (QUIT to exit): ");
+                command = scanner.nextLine();
+                String id;
+                int option;
+                if (command.equalsIgnoreCase("QUIT")) {
+                    break;
+                } else if (command.equalsIgnoreCase("ALL")) {
+                    id = "ALL";
+                } else if (command.matches(NON_NEGATIVE_INTEGER_REGEX)) {
+                    id = command;
+                } else {
+                    System.out.println("Unknown command");
+                    continue;
                 }
-            } while (!cmd.equals("QUIT"));
+                System.out.println("Enter option (0: START, 1: STOP, 2: RESUME) (QUIT to exit): ");
+                command = scanner.nextLine();
+                if (command.equalsIgnoreCase("QUIT")) {
+                    break;
+                } else if (command.matches(NON_NEGATIVE_INTEGER_REGEX)
+                        && Integer.parseInt(command) < 3) {
+                    option = Integer.parseInt(command);
+                } else {
+                    System.out.println("Unknown command");
+                    continue;
+                }
+                ControlMessage controlMessage = new ControlMessage(id, option);
+                manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
+            }
         } catch (IOException | ConnectorException e) {
             e.printStackTrace();
         }
