@@ -24,7 +24,7 @@ public class Gateway extends CoapServer {
         this.add(new ControlResource("control"));
     }
 
-    private static class SensorResource extends CoapResource {
+    public static class SensorResource extends CoapResource {
         private static final Map<Long, Sensor> sensors = new HashMap<>();
 
         public SensorResource(String name) {
@@ -67,7 +67,7 @@ public class Gateway extends CoapServer {
         }
     }
 
-    private static class ControlResource extends CoapResource {
+    public static class ControlResource extends CoapResource {
 
         public ControlResource(String name) {
             super("control");
@@ -86,7 +86,6 @@ public class Gateway extends CoapServer {
                 getAttributes().addAttribute("data");
                 getAttributes().setAttribute("data", new String(payload, StandardCharsets.UTF_8));
             }
-
             exchange.respond(CoAP.ResponseCode.CREATED, payload);
             changed();
             getAttributes().clearAttribute("data");

@@ -25,29 +25,31 @@ public class DataGenerator implements Runnable {
 
     @Override
     public void run() {
-        if (this.timeInterval > 0) {
-            final Date endTime = (new Date(System.currentTimeMillis() + this.timeInterval));
-            while ((new Date(System.currentTimeMillis())).before(endTime) && this.sensor.isRunning()) {
-                this.sensor.setHumidity((new Random()).nextDouble());
-                this.sensor.setTimestamp(new Date());
-                this.sensor.setUpdated(true);
-                System.out.println(this.sensor);
-                try {
-                    Thread.sleep(delay);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+        while (true) {
+            if (this.timeInterval > 0) {
+                final Date endTime = (new Date(System.currentTimeMillis() + this.timeInterval));
+                while ((new Date(System.currentTimeMillis())).before(endTime) && this.sensor.isRunning()) {
+                    this.sensor.setHumidity((new Random()).nextDouble());
+                    this.sensor.setTimestamp(new Date());
+                    this.sensor.setUpdated(true);
+                    // System.out.println(this.sensor);
+                    try {
+                        Thread.sleep(this.delay);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
-            }
-        } else if (this.timeInterval == Sensor.DEFAULT_TIME_INTERVAL) {
-            while (this.sensor.isRunning()) {
-                this.sensor.setHumidity((new Random()).nextDouble());
-                this.sensor.setTimestamp(new Date());
-                this.sensor.setUpdated(true);
-                System.out.println(this.sensor);
-                try {
-                    Thread.sleep(delay);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+            } else if (this.timeInterval == Sensor.DEFAULT_TIME_INTERVAL) {
+                while (this.sensor.isRunning()) {
+                    this.sensor.setHumidity((new Random()).nextDouble());
+                    this.sensor.setTimestamp(new Date());
+                    this.sensor.setUpdated(true);
+                    // System.out.println(this.sensor);
+                    try {
+                        Thread.sleep(this.delay);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
         }

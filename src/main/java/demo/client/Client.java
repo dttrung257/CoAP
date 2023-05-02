@@ -22,6 +22,7 @@ public class Client {
     private long delay = Sensor.DEFAULT_DELAY;
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final MessageMapper messageMapper = new MessageMapper();
+
     public Client(final Sensor sensor) {
         this.sensor = sensor;
         this.listenThread = new Thread(this::connectToGateway);
@@ -41,8 +42,9 @@ public class Client {
 
         private void start() {
             this.client.sensor.setRunning(true);
-            this.client.sendDataThread = new Thread(this.client::sendData);
-            this.client.sendDataThread.start();
+            if (!this.client.sendDataThread.isAlive()) {
+                this.client.sendDataThread.start();
+            }
         }
 
         private void stop() {
@@ -54,7 +56,6 @@ public class Client {
             if (response.getPayload().length > 0 && response.getPayload() != null) {
                 try {
                     ControlMessage controlMessage = mapper.readValue(response.getPayload(), ControlMessage.class);
-                    System.out.println(controlMessage);
                     if (controlMessage.getSensorId().equalsIgnoreCase("ALL")
                             || Integer.parseInt(controlMessage.getSensorId()) == this.client.sensor.getId()) {
                         String message = controlMessage.getMessage();
@@ -64,8 +65,6 @@ public class Client {
                             default -> {
                             }
                         }
-                    } else {
-                        return;
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -94,8 +93,7 @@ public class Client {
 
     private void sendData() {
         try {
-            System.out.format("Start send data after %d seconds\n", 1);
-            Thread.sleep(1000);
+            // System.out.format("Start send data after %d seconds\n", 1);
             this.sensor.startGenerateData(this.timeInterval, this.delay);
             if (this.timeInterval > 0) {
                 long endTime = System.currentTimeMillis() + (this.timeInterval + 3000);
@@ -121,7 +119,7 @@ public class Client {
                     }
                 }
             }
-        } catch (ConnectorException | IOException | InterruptedException e) {
+        } catch (ConnectorException | IOException e) {
             throw new RuntimeException(e);
         }
     }
