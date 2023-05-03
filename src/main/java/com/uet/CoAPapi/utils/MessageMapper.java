@@ -1,7 +1,7 @@
-package demo.utils;
+package com.uet.CoAPapi.utils;
 
-import demo.client.Sensor;
-import demo.message.DataMessage;
+import com.uet.CoAPapi.client.Sensor;
+import com.uet.CoAPapi.message.DataMessage;
 
 import java.util.function.Function;
 

@@ -1,11 +1,13 @@
-package demo.message;
+package com.uet.CoAPapi.message;
 
 public class ControlMessage {
-    public static final String STOP = "STOP";
-    public static final String START = "START";
-    public static final String RESUME = "RESUME";
+    public static final String ON = "ON";
+    public static final String OFF = "OFF";
+    public static final int TURN_ON = 0;
+    public static final int TURN_OFF = 1;
     private String sensorId;
     private int option;
+    private long delay;
     private String message;
 
     public ControlMessage() {
@@ -14,13 +16,15 @@ public class ControlMessage {
     public ControlMessage(String sensorId, int option) {
         this.sensorId = sensorId;
         this.option = option;
+        this.delay = -1;
         setMessageFromOption(this.option);
     }
 
-    public ControlMessage(String sensorId, int option, String message) {
+    public ControlMessage(String sensorId, int option, long delay) {
         this.sensorId = sensorId;
         this.option = option;
-        this.message = message;
+        this.delay = delay;
+        setMessageFromOption(this.option);
     }
 
     public String getSensorId() {
@@ -40,6 +44,14 @@ public class ControlMessage {
         setMessageFromOption(this.option);
     }
 
+    public long getDelay() {
+        return delay;
+    }
+
+    public void setDelay(long delay) {
+        this.delay = delay;
+    }
+
     public String getMessage() {
         return message;
     }
@@ -49,16 +61,10 @@ public class ControlMessage {
     }
 
     private void setMessageFromOption(int option) {
-        switch (option) {
-            case 1 -> {
-                this.message = STOP;
-            }
-            case 2 -> {
-                this.message = RESUME;
-            }
-            default -> {
-                this.message = START;
-            }
+        if (option == 1) {
+            this.message = OFF;
+        } else {
+            this.message = ON;
         }
     }
 

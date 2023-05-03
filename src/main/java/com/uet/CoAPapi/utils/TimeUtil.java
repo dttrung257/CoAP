@@ -1,4 +1,4 @@
-package demo.utils;
+package com.uet.CoAPapi.utils;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

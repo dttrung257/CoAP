@@ -1,34 +1,59 @@
-package demo.client;
+package com.uet.CoAPapi.client;
+
+import jakarta.persistence.*;
 
 import java.util.Date;
+import java.util.UUID;
 
+@Entity
+@Table(name = "sensors")
 public class Sensor {
-    private static long count = 0;
-    protected static long DEFAULT_TIME_INTERVAL = -1;
-    protected static long DEFAULT_DELAY = 1000;
+    public static long DEFAULT_TIME_INTERVAL = -1;
+    public static long DEFAULT_DELAY = 1000;
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(updatable = false)
     private long id;
+
     private String name;
+    @Transient
+    private long delay;
+    @Transient
     private double humidity;
+    @Transient
     private Date timestamp;
+    @Transient
     private boolean isUpdated;
+    @Transient
     private Thread generateDataThread;
+    @Transient
     private boolean isRunning;
+
     public Sensor() {
     }
 
-    public Sensor(double humidity, Date timestamp) {
-        this.id = count++;
-        this.name = "sensor-" + id;
+    public Sensor(double humidity) {
+        this.name = "sensor-" + UUID.randomUUID();
+        this.delay = DEFAULT_DELAY;
         this.humidity = humidity;
-        this.timestamp = timestamp;
+        this.timestamp = new Date(System.currentTimeMillis());
         this.isUpdated = false;
         this.isRunning = true;
     }
-    public Sensor(String name, double humidity, Date timestamp) {
-        this.id = count++;
+    public Sensor(String name, double humidity) {
         this.name = name;
+        this.delay = DEFAULT_DELAY;
         this.humidity = humidity;
-        this.timestamp = timestamp;
+        this.timestamp = new Date(System.currentTimeMillis());
+        this.isUpdated = false;
+        this.isRunning = true;
+    }
+
+    public Sensor(String name, double humidity, long delay) {
+        this.name = name;
+        this.delay = delay;
+        this.humidity = humidity;
+        this.timestamp = new Date(System.currentTimeMillis());
         this.isUpdated = false;
         this.isRunning = true;
     }
@@ -47,6 +72,14 @@ public class Sensor {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public long getDelay() {
+        return delay;
+    }
+
+    public void setDelay(long delay) {
+        this.delay = delay;
     }
 
     public double getHumidity() {
@@ -99,18 +132,14 @@ public class Sensor {
         generateDataThread.start();
     }
 
-    public void startGenerateData(long timeInterval) {
+    public void startGenerateData(long timeInterval, long delay) {
+        this.setDelay(delay);
         generateDataThread = new Thread(new DataGenerator(this, timeInterval));
         generateDataThread.start();
     }
 
-    public void startGenerateData(long timeInterval, long delay) {
-        generateDataThread = new Thread(new DataGenerator(this, timeInterval, delay));
-        generateDataThread.start();
-    }
-
     public static void main(String[] args) {
-        Sensor sensor = new Sensor(0.5, new Date());
+        Sensor sensor = new Sensor(0.5);
         sensor.startGenerateData(2000, 500);
     }
 }
