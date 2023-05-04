@@ -64,13 +64,46 @@ public class GatewayController {
     }
 
     // Turn off all sensors
+    @GetMapping("/sensors/off")
+    public ResponseEntity<String> stopSendData() {
+        ControlMessage controlMessage = new ControlMessage("ALL", ControlMessage.TURN_OFF);
+        try {
+            this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
+        } catch (ConnectorException | IOException e) {
+            throw new RuntimeException(e);
+        }
+        return ResponseEntity.ok("Success turn off all sensors");
+    }
 
     // Turn on all sensors
+    @GetMapping("/sensors/on")
+    public ResponseEntity<String> startSendData() {
+        ControlMessage controlMessage = new ControlMessage("ALL", ControlMessage.TURN_ON);
+        try {
+            this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
+        } catch (ConnectorException | IOException e) {
+            throw new RuntimeException(e);
+        }
+        return ResponseEntity.ok("Success turn on all sensors");
+    }
+
+    // Change speed
+    @GetMapping("/control/speed")
+    public ResponseEntity<String> changeSpeed(@RequestParam(value = "delay") Integer delay) {
+        ControlMessage controlMessage = new ControlMessage("ALL", ControlMessage.TURN_ON, delay * 1000);
+        try {
+            this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
+        } catch (ConnectorException | IOException e) {
+            throw new RuntimeException(e);
+        }
+        return ResponseEntity.ok("Change speed successfully");
+    }
+
 
     // Turn off sensors by id
 
     // Turn on sensors by id
 
-    // Change speed
+
 }
 
