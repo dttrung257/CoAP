@@ -101,9 +101,27 @@ public class GatewayController {
 
 
     // Turn off sensors by id
-
+    @GetMapping("/sensors/{id}/off")
+    public ResponseEntity<String> stopSendData(@PathVariable(value = "id", required = true) Long id) {
+        ControlMessage controlMessage = new ControlMessage(id.toString(), ControlMessage.TURN_OFF);
+        try {
+            this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
+        } catch (ConnectorException | IOException e) {
+            throw new RuntimeException(e);
+        }
+        return ResponseEntity.ok("Success turn off");
+    }
     // Turn on sensors by id
-
+    @GetMapping("/sensors/{id}/on")
+    public ResponseEntity<String> startSendData(@PathVariable(value = "id", required = true) Long id) {
+        ControlMessage controlMessage = new ControlMessage(id.toString(), ControlMessage.TURN_ON);
+        try {
+            this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
+        } catch (ConnectorException | IOException e) {
+            throw new RuntimeException(e);
+        }
+        return ResponseEntity.ok("Success turn off");
+    }
 
 }
 
