@@ -1,4 +1,4 @@
-package com.uet.CoAPapi.message;
+package com.uet.CoAPapi.coap.message;
 
 public class DataMessage {
     private long id;

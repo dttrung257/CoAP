@@ -1,8 +1,15 @@
-package com.uet.CoAPapi.client;
+package com.uet.CoAPapi.coap.client;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 import java.util.Date;
+import java.util.Random;
 import java.util.UUID;
 
 @Entity
@@ -11,7 +18,7 @@ public class Sensor {
     public static long DEFAULT_TIME_INTERVAL = -1;
     public static long DEFAULT_DELAY = 1000;
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(updatable = false)
     private long id;
 
@@ -119,12 +126,20 @@ public class Sensor {
         return "Sensor{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
+                ", delay=" + delay +
                 ", humidity=" + humidity +
                 ", timestamp=" + timestamp +
                 ", isUpdated=" + isUpdated +
-                ", generateDataThread=" + generateDataThread +
                 ", isRunning=" + isRunning +
                 '}';
+    }
+
+    public void loadInitData() {
+        this.delay = DEFAULT_DELAY;
+        this.humidity = (new Random()).nextDouble();
+        this.timestamp = new Date(System.currentTimeMillis());
+        this.isUpdated = false;
+        this.isRunning = true;
     }
 
     public void startGenerateData() {

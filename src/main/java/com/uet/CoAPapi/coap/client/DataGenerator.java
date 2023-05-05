@@ -1,4 +1,4 @@
-package com.uet.CoAPapi.client;
+package com.uet.CoAPapi.coap.client;
 
 import java.util.Date;
 import java.util.Random;

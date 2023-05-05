@@ -1,7 +1,7 @@
-package com.uet.CoAPapi.server;
+package com.uet.CoAPapi.coap.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.uet.CoAPapi.message.ControlMessage;
+import com.uet.CoAPapi.coap.message.ControlMessage;
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.elements.exception.ConnectorException;

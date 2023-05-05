@@ -1,9 +1,9 @@
-package com.uet.CoAPapi.client;
+package com.uet.CoAPapi.coap.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.uet.CoAPapi.message.ControlMessage;
-import com.uet.CoAPapi.message.DataMessage;
-import com.uet.CoAPapi.utils.MessageMapper;
+import com.uet.CoAPapi.coap.message.ControlMessage;
+import com.uet.CoAPapi.coap.message.DataMessage;
+import com.uet.CoAPapi.mappers.MessageMapper;
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapResponse;
@@ -69,12 +69,13 @@ public class Client {
                                 && controlMessage.getDelay() > 0) {
                             this.client.setDelay(controlMessage.getDelay());
                             this.client.getSensor().setDelay(controlMessage.getDelay());
-                        }
-                        String message = controlMessage.getMessage();
-                        switch (message) {
-                            case ControlMessage.ON -> start();
-                            case ControlMessage.OFF -> stop();
-                            default -> {
+                        } else if (controlMessage.getDelay() == -1) {
+                            String message = controlMessage.getMessage();
+                            switch (message) {
+                                case ControlMessage.ON -> start();
+                                case ControlMessage.OFF -> stop();
+                                default -> {
+                                }
                             }
                         }
                     }

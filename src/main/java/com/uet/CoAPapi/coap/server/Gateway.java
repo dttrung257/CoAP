@@ -1,9 +1,9 @@
-package com.uet.CoAPapi.server;
+package com.uet.CoAPapi.coap.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.uet.CoAPapi.client.Sensor;
-import com.uet.CoAPapi.message.ControlMessage;
-import com.uet.CoAPapi.message.DataMessage;
+import com.uet.CoAPapi.coap.client.Sensor;
+import com.uet.CoAPapi.coap.message.ControlMessage;
+import com.uet.CoAPapi.coap.message.DataMessage;
 import org.eclipse.californium.core.*;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.server.resources.CoapExchange;

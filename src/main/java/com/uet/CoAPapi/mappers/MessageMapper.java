@@ -1,7 +1,8 @@
-package com.uet.CoAPapi.utils;
+package com.uet.CoAPapi.mappers;
 
-import com.uet.CoAPapi.client.Sensor;
-import com.uet.CoAPapi.message.DataMessage;
+import com.uet.CoAPapi.coap.client.Sensor;
+import com.uet.CoAPapi.coap.message.DataMessage;
+import com.uet.CoAPapi.utils.TimeUtil;
 
 import java.util.function.Function;
 
