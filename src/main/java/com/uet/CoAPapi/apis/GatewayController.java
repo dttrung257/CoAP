@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.uet.CoAPapi.coap.client.Client;
 import com.uet.CoAPapi.coap.client.Sensor;
 import com.uet.CoAPapi.config.CoapConfig;
+import com.uet.CoAPapi.dtos.NewSensor;
 import com.uet.CoAPapi.dtos.SensorDelay;
 import com.uet.CoAPapi.dtos.SensorDto;
 import com.uet.CoAPapi.dtos.SensorState;
@@ -165,5 +166,34 @@ public class GatewayController {
 
 
     // Create sensor
+    @PostMapping("/sensors")
+    public ResponseEntity<SensorDto> createSensor(@RequestBody @Valid NewSensor newSensor) {
+        if (sensorRepo.existsByName(newSensor.getName())) {
+            throw new SensorAlreadyExistsException("Sensor name: " + newSensor.getName() + " already exists");
+        }
+        final Sensor sensor = new Sensor();
+        sensor.setName(newSensor.getName());
+        sensor.loadInitData();
+        Client client;
+        if (!CoapConfig.sensors.isEmpty()) {
+            sensor.setDelay(CoapConfig.sensors.get(0).getDelay());
+            client = new Client(sensor);
+            client.setDelay(CoapConfig.sensors.get(0).getDelay());
+        } else {
+            sensor.setDelay(Sensor.DEFAULT_DELAY);
+            client = new Client(sensor);
+            client.setDelay(Sensor.DEFAULT_DELAY);
+        }
+        client.createConnection();
+        CoapConfig.sensors.add(sensor);
+        sensorRepo.save(sensor);
+        ControlMessage controlMessage = new ControlMessage(Long.toString(sensor.getId()), ControlMessage.TURN_ON);
+        try {
+            this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
+        } catch (ConnectorException | IOException e) {
+            throw new RuntimeException(e);
+        }
+        return new ResponseEntity<>(sensorDtoMapper.apply(sensor), HttpStatus.CREATED);
+    }
 }
 
