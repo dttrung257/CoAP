@@ -3,10 +3,12 @@ package com.uet.CoAPapi.coap.message;
 public class ControlMessage {
     public static final String TURN_ON_MESSAGE = "ON";
     public static final String TURN_OFF_MESSAGE = "OFF";
+    public static final String TERMINATE_MESSAGE = "TERMINATE";
     private static final String OTHER_MESSAGE = "OTHER";
     public static final int TURN_ON_OPTION = 0;
     public static final int TURN_OFF_OPTION = 1;
-    private static final int OTHER_OPTION = 2;
+    public static final int TERMINATE_OPTION = 2;
+    private static final int OTHER_OPTION = 3;
     private String sensorId;
     private int option;
     private long delay;
@@ -67,6 +69,7 @@ public class ControlMessage {
         switch (option) {
             case TURN_ON_OPTION -> this.message = TURN_ON_MESSAGE;
             case TURN_OFF_OPTION -> this.message = TURN_OFF_MESSAGE;
+            case TERMINATE_OPTION -> this.message = TERMINATE_MESSAGE;
             default -> this.message = OTHER_MESSAGE;
         }
     }

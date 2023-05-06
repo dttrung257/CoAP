@@ -58,8 +58,13 @@ public class Client {
             this.client.sensor.setRunning(false);
         }
 
+        private void terminate() {
+            this.client.sensor.setAlive(false);
+        }
+
         @Override
         public void onLoad(CoapResponse response) {
+            // System.out.println("Connection is created");
             if (response.getPayload().length > 0 && response.getPayload() != null) {
                 try {
                     ControlMessage controlMessage = mapper.readValue(response.getPayload(), ControlMessage.class);
@@ -74,6 +79,7 @@ public class Client {
                             switch (message) {
                                 case ControlMessage.TURN_ON_MESSAGE -> start();
                                 case ControlMessage.TURN_OFF_MESSAGE -> stop();
+                                case ControlMessage.TERMINATE_MESSAGE -> terminate();
                                 default -> {
                                     System.out.println("Unknown message: " + message);
                                 }
