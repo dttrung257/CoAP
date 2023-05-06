@@ -200,5 +200,23 @@ public class GatewayController {
         return new ResponseEntity<>(sensorDtoMapper.apply(sensor), HttpStatus.CREATED);
     }
 
+    // Rename sensor
+    @PutMapping("/sensors/{id}/name")
+    public ResponseEntity<SensorDto> changeSensorName(@PathVariable(value = "id", required = true) Long id,
+                                                        @RequestBody @Valid SensorName sensorName) {
+        final Optional<Sensor> sensorOptional = sensorRepo.findById(id);
+        if (CoapConfig.sensors.stream().anyMatch(s -> s.getId() == id) && sensorOptional.isPresent()
+            && CoapConfig.sensors.stream().noneMatch(s -> s.getId() != id && s.getName().equalsIgnoreCase(sensorName.getName()))) {
+            CoapConfig.sensors.stream().filter(s -> s.getId() == id).toList().get(0).setName(sensorName.getName());
+            final Sensor sensor = sensorOptional.get();
+            sensor.setName(sensorName.getName());
+            sensorRepo.save(sensor);
+            return ResponseEntity.ok(sensorDtoMapper.apply(sensor));
+        } else if (CoapConfig.sensors.stream().anyMatch(s -> s.getId() != id && s.getName().equalsIgnoreCase(sensorName.getName()))) {
+            throw new SensorAlreadyExistsException("Sensor name: " + sensorName.getName() + " already exists");
+        } else {
+            throw new SensorNotFoundException("Sensor id: " + id + " not found");
+        }
+    }
 }
 
