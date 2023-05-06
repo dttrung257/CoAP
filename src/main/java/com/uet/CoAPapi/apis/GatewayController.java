@@ -4,11 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.uet.CoAPapi.coap.client.Client;
 import com.uet.CoAPapi.coap.client.Sensor;
 import com.uet.CoAPapi.config.CoapConfig;
-import com.uet.CoAPapi.dtos.NewSensor;
-import com.uet.CoAPapi.dtos.SensorDelay;
-import com.uet.CoAPapi.dtos.SensorDto;
-import com.uet.CoAPapi.dtos.SensorState;
+import com.uet.CoAPapi.dtos.*;
 import com.uet.CoAPapi.exception.SensorAlreadyExistsException;
+import com.uet.CoAPapi.exception.SensorNotFoundException;
 import com.uet.CoAPapi.exception.UnknownSensorStateException;
 import com.uet.CoAPapi.mappers.SensorDtoMapper;
 import com.uet.CoAPapi.coap.message.ControlMessage;
@@ -29,6 +27,7 @@ import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/gateway")
@@ -124,8 +123,11 @@ public class GatewayController {
     // Turn on sensors by id
     // Turn off sensors by id
     @PutMapping("/sensors/{id}/state")
-    public ResponseEntity<String> changeSensorStateById(@PathVariable(value = "id", required = true) Long id,
+    public ResponseEntity<SensorDto> changeSensorStateById(@PathVariable(value = "id", required = true) Long id,
                                                @RequestBody @Valid SensorState sensorState) {
+        if (!sensorRepo.existsById(id)) {
+            throw new SensorNotFoundException("Sensor id: " + id + " not found");
+        }
         if (sensorState.getState().equalsIgnoreCase(ControlMessage.ON)) {
             ControlMessage controlMessage = new ControlMessage(id.toString(), ControlMessage.TURN_ON);
             try {
@@ -133,7 +135,6 @@ public class GatewayController {
             } catch (ConnectorException | IOException e) {
                 throw new RuntimeException(e);
             }
-            return ResponseEntity.ok("Success turn on sensor id: " + id);
         } else if (sensorState.getState().equalsIgnoreCase(ControlMessage.OFF)) {
             ControlMessage controlMessage = new ControlMessage(id.toString(), ControlMessage.TURN_OFF);
             try {
@@ -141,12 +142,15 @@ public class GatewayController {
             } catch (ConnectorException | IOException e) {
                 throw new RuntimeException(e);
             }
-            return ResponseEntity.ok("Success turn off sensor id: " + id);
         } else {
             throw new UnknownSensorStateException("Unknown sensor state: " + sensorState.getState());
         }
+        final SensorDto sensorDto = CoapConfig.sensors.stream().filter(s -> s.getId() == id)
+                .map(sensorDtoMapper).toList().get(0);
+        return ResponseEntity.ok(sensorDto);
     }
 
+    // Rename sensor
 
     // Get sensors
     @GetMapping("/sensors")
@@ -195,5 +199,6 @@ public class GatewayController {
         }
         return new ResponseEntity<>(sensorDtoMapper.apply(sensor), HttpStatus.CREATED);
     }
+
 }
 

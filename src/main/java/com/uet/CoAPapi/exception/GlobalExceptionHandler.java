@@ -59,5 +59,16 @@ public class GlobalExceptionHandler {
                 .build();
         return new ResponseEntity<>(ed, HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(SensorNotFoundException.class)
+    public ResponseEntity<ErrorDetails> handleSSensorNotFoundException(SensorNotFoundException e, WebRequest webRequest) {
+        final ErrorDetails ed = ErrorDetails.builder()
+                .timestamp(new Date())
+                .status(HttpStatus.NOT_FOUND.value())
+                .message(e.getMessage())
+                .details(webRequest.getDescription(false))
+                .build();
+        return new ResponseEntity<>(ed, HttpStatus.NOT_FOUND);
+    }
 }
 

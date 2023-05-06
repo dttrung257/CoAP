@@ -9,5 +9,4 @@ public class CoApApiApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(CoApApiApplication.class, args);
 	}
-
 }
