@@ -35,6 +35,8 @@ public class Sensor {
     private Thread generateDataThread;
     @Transient
     private boolean isRunning;
+    @Transient
+    private boolean isAlive;
 
     public Sensor() {
     }
@@ -46,6 +48,7 @@ public class Sensor {
         this.timestamp = new Date(System.currentTimeMillis());
         this.isUpdated = false;
         this.isRunning = true;
+        this.isAlive = true;
     }
     public Sensor(String name, double humidity) {
         this.name = name;
@@ -54,6 +57,7 @@ public class Sensor {
         this.timestamp = new Date(System.currentTimeMillis());
         this.isUpdated = false;
         this.isRunning = true;
+        this.isAlive = true;
     }
 
     public Sensor(String name, double humidity, long delay) {
@@ -63,6 +67,7 @@ public class Sensor {
         this.timestamp = new Date(System.currentTimeMillis());
         this.isUpdated = false;
         this.isRunning = true;
+        this.isAlive = true;
     }
 
     public long getId() {
@@ -121,6 +126,14 @@ public class Sensor {
         isRunning = running;
     }
 
+    public boolean isAlive() {
+        return isAlive;
+    }
+
+    public void setAlive(boolean alive) {
+        isAlive = alive;
+    }
+
     @Override
     public String toString() {
         return "Sensor{" +
@@ -140,6 +153,7 @@ public class Sensor {
         this.timestamp = new Date(System.currentTimeMillis());
         this.isUpdated = false;
         this.isRunning = true;
+        this.isAlive = true;
     }
 
     public void startGenerateData() {

@@ -4,7 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.uet.CoAPapi.coap.client.Client;
 import com.uet.CoAPapi.coap.client.Sensor;
 import com.uet.CoAPapi.config.CoapConfig;
-import com.uet.CoAPapi.dtos.*;
+import com.uet.CoAPapi.dtos.NewSensor;
+import com.uet.CoAPapi.dtos.SensorDelay;
+import com.uet.CoAPapi.dtos.SensorDto;
+import com.uet.CoAPapi.dtos.SensorName;
+import com.uet.CoAPapi.dtos.SensorState;
 import com.uet.CoAPapi.exception.SensorAlreadyExistsException;
 import com.uet.CoAPapi.exception.SensorNotFoundException;
 import com.uet.CoAPapi.exception.UnknownSensorStateException;
@@ -48,7 +52,7 @@ public class GatewayController {
 
     @GetMapping(value = "/data", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<DataMessage> getDataMessages() {
-        ControlMessage controlMessage = new ControlMessage("ALL", ControlMessage.TURN_ON);
+        ControlMessage controlMessage = new ControlMessage("ALL", ControlMessage.TURN_ON_OPTION);
         try {
             this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
         } catch (ConnectorException | IOException e) {
@@ -86,16 +90,16 @@ public class GatewayController {
     // Turn on all sensors
     @PutMapping("/sensors/state")
     public ResponseEntity<String> changeSensorState(@RequestBody @Valid SensorState sensorState) {
-        if (sensorState.getState().equalsIgnoreCase(ControlMessage.ON)) {
-            ControlMessage controlMessage = new ControlMessage("ALL", ControlMessage.TURN_ON);
+        if (sensorState.getState().equalsIgnoreCase(ControlMessage.TURN_ON_MESSAGE)) {
+            ControlMessage controlMessage = new ControlMessage("ALL", ControlMessage.TURN_ON_OPTION);
             try {
                 this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
             } catch (ConnectorException | IOException e) {
                 throw new RuntimeException(e);
             }
             return ResponseEntity.ok("Success turn on all sensors");
-        } else if (sensorState.getState().equalsIgnoreCase(ControlMessage.OFF)) {
-            ControlMessage controlMessage = new ControlMessage("ALL", ControlMessage.TURN_OFF);
+        } else if (sensorState.getState().equalsIgnoreCase(ControlMessage.TURN_OFF_MESSAGE)) {
+            ControlMessage controlMessage = new ControlMessage("ALL", ControlMessage.TURN_OFF_OPTION);
             try {
                 this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
             } catch (ConnectorException | IOException e) {
@@ -110,7 +114,7 @@ public class GatewayController {
     // Change speed
     @PutMapping("/sensors/speed")
     public ResponseEntity<String> changeSpeed(@RequestBody @Valid SensorDelay sensorDelay) {
-        ControlMessage controlMessage = new ControlMessage("ALL", ControlMessage.TURN_ON, (long) (sensorDelay.getDelay() * 1000));
+        ControlMessage controlMessage = new ControlMessage("ALL", (long) (sensorDelay.getDelay() * 1000));
         try {
             this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
         } catch (ConnectorException | IOException e) {
@@ -128,15 +132,15 @@ public class GatewayController {
         if (!sensorRepo.existsById(id)) {
             throw new SensorNotFoundException("Sensor id: " + id + " not found");
         }
-        if (sensorState.getState().equalsIgnoreCase(ControlMessage.ON)) {
-            ControlMessage controlMessage = new ControlMessage(id.toString(), ControlMessage.TURN_ON);
+        if (sensorState.getState().equalsIgnoreCase(ControlMessage.TURN_ON_MESSAGE)) {
+            ControlMessage controlMessage = new ControlMessage(id.toString(), ControlMessage.TURN_ON_OPTION);
             try {
                 this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
             } catch (ConnectorException | IOException e) {
                 throw new RuntimeException(e);
             }
-        } else if (sensorState.getState().equalsIgnoreCase(ControlMessage.OFF)) {
-            ControlMessage controlMessage = new ControlMessage(id.toString(), ControlMessage.TURN_OFF);
+        } else if (sensorState.getState().equalsIgnoreCase(ControlMessage.TURN_OFF_MESSAGE)) {
+            ControlMessage controlMessage = new ControlMessage(id.toString(), ControlMessage.TURN_OFF_OPTION);
             try {
                 this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
             } catch (ConnectorException | IOException e) {
@@ -191,7 +195,7 @@ public class GatewayController {
         client.createConnection();
         CoapConfig.sensors.add(sensor);
         sensorRepo.save(sensor);
-        ControlMessage controlMessage = new ControlMessage(Long.toString(sensor.getId()), ControlMessage.TURN_ON);
+        ControlMessage controlMessage = new ControlMessage(Long.toString(sensor.getId()), ControlMessage.TURN_ON_OPTION);
         try {
             this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
         } catch (ConnectorException | IOException e) {
@@ -206,17 +210,21 @@ public class GatewayController {
                                                         @RequestBody @Valid SensorName sensorName) {
         final Optional<Sensor> sensorOptional = sensorRepo.findById(id);
         if (CoapConfig.sensors.stream().anyMatch(s -> s.getId() == id) && sensorOptional.isPresent()
-            && CoapConfig.sensors.stream().noneMatch(s -> s.getId() != id && s.getName().equalsIgnoreCase(sensorName.getName()))) {
+            && CoapConfig.sensors.stream()
+                .noneMatch(s -> s.getId() != id && s.getName().equalsIgnoreCase(sensorName.getName()))) {
             CoapConfig.sensors.stream().filter(s -> s.getId() == id).toList().get(0).setName(sensorName.getName());
             final Sensor sensor = sensorOptional.get();
             sensor.setName(sensorName.getName());
             sensorRepo.save(sensor);
             return ResponseEntity.ok(sensorDtoMapper.apply(sensor));
-        } else if (CoapConfig.sensors.stream().anyMatch(s -> s.getId() != id && s.getName().equalsIgnoreCase(sensorName.getName()))) {
+        } else if (CoapConfig.sensors.stream()
+                .anyMatch(s -> s.getId() != id && s.getName().equalsIgnoreCase(sensorName.getName()))) {
             throw new SensorAlreadyExistsException("Sensor name: " + sensorName.getName() + " already exists");
         } else {
             throw new SensorNotFoundException("Sensor id: " + id + " not found");
         }
     }
+
+    // Delete sensor
 }
 
