@@ -226,7 +226,6 @@ public class GatewayController {
     }
 
     // Delete sensor
-
     @DeleteMapping("/sensors/{id}")
     public ResponseEntity<String> deleteSensorById(@PathVariable(value = "id", required = true) Long id) {
         final Optional<Sensor> optionalSensor = sensorRepo.findById(id);
