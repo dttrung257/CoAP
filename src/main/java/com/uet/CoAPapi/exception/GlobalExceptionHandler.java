@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 
 import java.util.Date;
-import java.util.stream.Collectors;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -61,7 +60,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(SensorNotFoundException.class)
-    public ResponseEntity<ErrorDetails> handleSSensorNotFoundException(SensorNotFoundException e, WebRequest webRequest) {
+    public ResponseEntity<ErrorDetails> handleSensorNotFoundException(SensorNotFoundException e, WebRequest webRequest) {
         final ErrorDetails ed = ErrorDetails.builder()
                 .timestamp(new Date())
                 .status(HttpStatus.NOT_FOUND.value())

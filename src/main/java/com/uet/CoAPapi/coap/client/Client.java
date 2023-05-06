@@ -72,9 +72,10 @@ public class Client {
                         } else if (controlMessage.getDelay() == -1) {
                             String message = controlMessage.getMessage();
                             switch (message) {
-                                case ControlMessage.ON -> start();
-                                case ControlMessage.OFF -> stop();
+                                case ControlMessage.TURN_ON_MESSAGE -> start();
+                                case ControlMessage.TURN_OFF_MESSAGE -> stop();
                                 default -> {
+                                    System.out.println("Unknown message: " + message);
                                 }
                             }
                         }
@@ -95,10 +96,13 @@ public class Client {
         try {
             this.client = new CoapClient("coap://localhost:5683/sensors");
             CoapResponse response = this.client.post(mapper.writeValueAsString(this.sensor), MediaTypeRegistry.TEXT_PLAIN);
-            System.out.println(response.getResponseText());
             CoapClient listener = new CoapClient("coap://localhost:5683/control");
             listener.observe(new ClientListener(this));
-            Thread.sleep(7 * 24 * 3600 * 1000);
+            while (this.sensor.isAlive()) {
+                Thread.sleep(1);
+            }
+            System.out.println("Sensor id: " + this.sensor.getId() + " stops listening to gateway");
+            // Thread.sleep(7 * 24 * 3600 * 1000);
         } catch (ConnectorException | IOException | InterruptedException e) {
             e.printStackTrace();
         }
@@ -110,7 +114,7 @@ public class Client {
             this.sensor.startGenerateData(this.timeInterval, this.delay);
             if (this.timeInterval > 0) {
                 long endTime = System.currentTimeMillis() + (this.timeInterval + 3000);
-                while (System.currentTimeMillis() < endTime) {
+                while (System.currentTimeMillis() < endTime && this.sensor.isAlive()) {
                     if (this.sensor.isUpdated()) {
                         final DataMessage dataMessage = messageMapper.apply(sensor);
                         this.client.put(mapper.writeValueAsString(dataMessage), MediaTypeRegistry.TEXT_PLAIN);
@@ -119,7 +123,7 @@ public class Client {
                 }
             } else if (this.timeInterval == Sensor.DEFAULT_TIME_INTERVAL) {
                 long startTime = System.currentTimeMillis();
-                while (true) {
+                while (this.sensor.isAlive()) {
                     if (this.sensor.isUpdated()) {
                         final DataMessage dataMessage = messageMapper.apply(sensor);
                         this.client.put(mapper.writeValueAsString(dataMessage), MediaTypeRegistry.TEXT_PLAIN);
@@ -135,6 +139,7 @@ public class Client {
         } catch (ConnectorException | IOException e) {
             throw new RuntimeException(e);
         }
+        System.out.println("Sensor id: " + this.sensor.getId() + " stops sending data to gateway");
     }
 
     public void createConnection() {

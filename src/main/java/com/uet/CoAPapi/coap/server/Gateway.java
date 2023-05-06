@@ -41,13 +41,13 @@ public class Gateway extends CoapServer {
         @Override
         public void handlePOST(CoapExchange exchange) {
             exchange.accept();
-            byte[] sensorInfo = exchange.getRequestPayload();
-            if (sensorInfo.length > 0) {
+            byte[] payload = exchange.getRequestPayload();
+            if (payload.length > 0) {
                 try {
-                    Sensor sensor = mapper.readValue(sensorInfo, Sensor.class);
-                    // System.out.println(sensor);
+                    Sensor sensor = mapper.readValue(payload, Sensor.class);
                     sensors.put(sensor.getId(), sensor);
-                    exchange.respond(CoAP.ResponseCode.CREATED, "Connection is created");
+                    System.out.println("Sensor id: " + sensor.getId() + " connected to gateway");
+                    exchange.respond(CoAP.ResponseCode.CREATED);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
