@@ -69,5 +69,16 @@ public class GlobalExceptionHandler {
                 .build();
         return new ResponseEntity<>(ed, HttpStatus.NOT_FOUND);
     }
+
+    @ExceptionHandler(CannotDeleteRunningSensorException.class)
+    public ResponseEntity<ErrorDetails> handleCannotDeleteRunningSensorException(CannotDeleteRunningSensorException e, WebRequest webRequest) {
+        final ErrorDetails ed = ErrorDetails.builder()
+                .timestamp(new Date())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .message(e.getMessage())
+                .details(webRequest.getDescription(false))
+                .build();
+        return new ResponseEntity<>(ed, HttpStatus.BAD_REQUEST);
+    }
 }
 

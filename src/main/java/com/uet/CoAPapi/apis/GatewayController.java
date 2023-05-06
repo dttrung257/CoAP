@@ -9,6 +9,7 @@ import com.uet.CoAPapi.dtos.SensorDelay;
 import com.uet.CoAPapi.dtos.SensorDto;
 import com.uet.CoAPapi.dtos.SensorName;
 import com.uet.CoAPapi.dtos.SensorState;
+import com.uet.CoAPapi.exception.CannotDeleteRunningSensorException;
 import com.uet.CoAPapi.exception.SensorAlreadyExistsException;
 import com.uet.CoAPapi.exception.SensorNotFoundException;
 import com.uet.CoAPapi.exception.UnknownSensorStateException;
@@ -154,7 +155,6 @@ public class GatewayController {
         return ResponseEntity.ok(sensorDto);
     }
 
-    // Rename sensor
 
     // Get sensors
     @GetMapping("/sensors")
@@ -226,5 +226,26 @@ public class GatewayController {
     }
 
     // Delete sensor
+
+    @DeleteMapping("/sensors/{id}")
+    public ResponseEntity<String> deleteSensorById(@PathVariable(value = "id", required = true) Long id) {
+        final Optional<Sensor> optionalSensor = sensorRepo.findById(id);
+        if (optionalSensor.isEmpty()) {
+            throw new SensorNotFoundException("Sensor id: " + id + " not found");
+        }
+        if (CoapConfig.sensors.stream().filter(s -> s.getId() == id).toList().get(0).isRunning()) {
+            throw new CannotDeleteRunningSensorException("Sensor id: " + id + " cannot be deleted while it is on");
+        }
+        ControlMessage controlMessage = new ControlMessage(id.toString(), ControlMessage.TERMINATE_OPTION);
+        try {
+            this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
+        } catch (ConnectorException | IOException e) {
+            throw new RuntimeException(e);
+        }
+        CoapConfig.sensors.removeIf(s -> s.getId() == id);
+        sensorRepo.delete(optionalSensor.get());
+        return ResponseEntity.ok("Delete sensor id: " + id + " successfully");
+    }
+
 }
 
