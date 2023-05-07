@@ -216,7 +216,8 @@ public class GatewayController {
             final Sensor sensor = sensorOptional.get();
             sensor.setName(sensorName.getName());
             sensorRepo.save(sensor);
-            return ResponseEntity.ok(sensorDtoMapper.apply(sensor));
+            return ResponseEntity.ok(sensorDtoMapper
+                    .apply(CoapConfig.sensors.stream().filter(s -> s.getId() == id).toList().get(0)));
         } else if (CoapConfig.sensors.stream()
                 .anyMatch(s -> s.getId() != id && s.getName().equalsIgnoreCase(sensorName.getName()))) {
             throw new SensorAlreadyExistsException("Sensor name: " + sensorName.getName() + " already exists");
@@ -247,4 +248,3 @@ public class GatewayController {
     }
 
 }
-
