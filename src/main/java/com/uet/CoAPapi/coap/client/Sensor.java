@@ -16,7 +16,7 @@ import java.util.UUID;
 @Table(name = "sensors")
 public class Sensor {
     public static long DEFAULT_TIME_INTERVAL = -1;
-    public static long DEFAULT_DELAY = 1000;
+    public static long DEFAULT_DELAY = 5000;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(updatable = false)
