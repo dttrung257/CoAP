@@ -23,7 +23,7 @@ public class DataGenerator implements Runnable {
     /*
       Average humidity in Hanoi : 81% (min) - 89% (max)
      */
-    private static double humidityGenerate() {
+    public static double humidityGenerate() {
         double random = (new Random()).nextDouble();
         return MIN_AVERAGE_HUMIDITY + (MAX_AVERAGE_HUMIDITY - MIN_AVERAGE_HUMIDITY) * random;
     }
