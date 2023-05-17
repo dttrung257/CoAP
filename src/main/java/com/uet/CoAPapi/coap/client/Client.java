@@ -99,10 +99,11 @@ public class Client {
     }
 
     private void connectToGateway() {
+        CoapClient listener = null;
         try {
             this.client = new CoapClient("coap://localhost:5683/sensors");
-            CoapResponse response = this.client.post(mapper.writeValueAsString(this.sensor), MediaTypeRegistry.TEXT_PLAIN);
-            CoapClient listener = new CoapClient("coap://localhost:5683/control");
+            this.client.post(mapper.writeValueAsString(this.sensor), MediaTypeRegistry.TEXT_PLAIN);
+            listener = new CoapClient("coap://localhost:5683/control");
             listener.observe(new ClientListener(this));
             while (this.sensor.isAlive()) {
                 Thread.sleep(1);
@@ -111,6 +112,13 @@ public class Client {
             // Thread.sleep(7 * 24 * 3600 * 1000);
         } catch (ConnectorException | IOException | InterruptedException e) {
             e.printStackTrace();
+        } finally {
+            if (this.client != null) {
+                this.client.shutdown();
+            }
+            if (listener != null) {
+                listener.shutdown();
+            }
         }
     }
 
@@ -165,6 +173,10 @@ public class Client {
         this.timeInterval = timeInterval;
         this.delay = delay;
         this.sendDataThread.start();
+    }
+
+    public void stop() {
+        this.sensor.setAlive(false);
     }
 
     public static void main(String[] args) {
