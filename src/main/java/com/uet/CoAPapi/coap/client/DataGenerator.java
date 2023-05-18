@@ -35,7 +35,7 @@ public class DataGenerator implements Runnable {
                 final Date endTime = (new Date(System.currentTimeMillis() + this.timeInterval));
                 while ((new Date(System.currentTimeMillis())).before(endTime) && this.sensor.isRunning()) {
                     this.sensor.setHumidity(humidityGenerate());
-                    this.sensor.setTimestamp(new Date());
+                    this.sensor.setTimestamp(System.currentTimeMillis());
                     this.sensor.setUpdated(true);
                     // System.out.println(this.sensor);
                     try {
@@ -47,7 +47,7 @@ public class DataGenerator implements Runnable {
             } else if (this.timeInterval == Sensor.DEFAULT_TIME_INTERVAL) {
                 while (this.sensor.isRunning()) {
                     this.sensor.setHumidity(humidityGenerate());
-                    this.sensor.setTimestamp(new Date());
+                    this.sensor.setTimestamp(System.currentTimeMillis());
                     this.sensor.setUpdated(true);
                     // System.out.println(this.sensor);
                     try {

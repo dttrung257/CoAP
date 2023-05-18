@@ -12,5 +12,6 @@ public class DataMessage {
     private long id;
     private String name;
     private double humidity;
-    private String timestamp;
+    private long timestamp;
+    private long latency;
 }

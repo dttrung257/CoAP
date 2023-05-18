@@ -4,11 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.uet.CoAPapi.coap.client.Client;
 import com.uet.CoAPapi.coap.client.Sensor;
 import com.uet.CoAPapi.config.CoapConfig;
-import com.uet.CoAPapi.dtos.NewSensor;
-import com.uet.CoAPapi.dtos.SensorDelay;
-import com.uet.CoAPapi.dtos.SensorDto;
-import com.uet.CoAPapi.dtos.SensorName;
-import com.uet.CoAPapi.dtos.SensorState;
+import com.uet.CoAPapi.dtos.*;
 import com.uet.CoAPapi.exception.CannotDeleteRunningSensorException;
 import com.uet.CoAPapi.exception.SensorAlreadyExistsException;
 import com.uet.CoAPapi.exception.SensorNotFoundException;
@@ -17,6 +13,7 @@ import com.uet.CoAPapi.mappers.SensorDtoMapper;
 import com.uet.CoAPapi.coap.message.ControlMessage;
 import com.uet.CoAPapi.coap.message.DataMessage;
 import com.uet.CoAPapi.repositories.SensorRepo;
+import com.uet.CoAPapi.utils.TimeUtil;
 import jakarta.validation.Valid;
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
@@ -52,7 +49,7 @@ public class GatewayController {
     }
 
     @GetMapping(value = "/data", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<DataMessage> getDataMessages() {
+    public Flux<DataResponse> getDataMessages() {
         ControlMessage controlMessage = new ControlMessage("ALL", ControlMessage.TURN_ON_OPTION);
         try {
             this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
@@ -79,8 +76,14 @@ public class GatewayController {
                 .map(coapResponse -> {
                     try {
                         DataMessage dataMessage = mapper.readValue(coapResponse.getPayload(), DataMessage.class);
-                        System.out.println(dataMessage);
-                        return dataMessage;
+                        final DataResponse response = DataResponse.builder()
+                                .id(dataMessage.getId())
+                                .name(dataMessage.getName())
+                                .humidity(dataMessage.getHumidity())
+                                .timestamp(TimeUtil.format(dataMessage.getTimestamp()))
+                                .latency(dataMessage.getLatency())
+                                .build();
+                        return response;
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }

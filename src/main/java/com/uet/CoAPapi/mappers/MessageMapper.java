@@ -14,7 +14,7 @@ public class MessageMapper implements Function<Sensor, DataMessage> {
                 .id(sensor.getId())
                 .name(sensor.getName())
                 .humidity(sensor.getHumidity())
-                .timestamp(timeUtil.format(sensor.getTimestamp()))
+                .timestamp(sensor.getTimestamp())
                 .build();
     }
 }

@@ -4,13 +4,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.uet.CoAPapi.coap.client.Sensor;
 import com.uet.CoAPapi.coap.message.ControlMessage;
 import com.uet.CoAPapi.coap.message.DataMessage;
+import com.uet.CoAPapi.config.CoapConfig;
+import com.uet.CoAPapi.utils.TimeUtil;
 import org.eclipse.californium.core.*;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -61,12 +69,9 @@ public class Gateway extends CoapServer {
             if (payload.length > 0) {
                 try {
                     DataMessage message = mapper.readValue(payload, DataMessage.class);
+                    message.setLatency(System.currentTimeMillis() - message.getTimestamp());
                     getAttributes().addAttribute("sensor-data");
-                    getAttributes().setAttribute("sensor-data", new String(payload, StandardCharsets.UTF_8));
-//                System.out.println("id: " + message.getId() +
-//                        ", humidity: " + message.getHumidity() +
-//                        ", time: " + message.getTimestamp());
-                    // dataQueue.offer(message);
+                    getAttributes().setAttribute("sensor-data", mapper.writeValueAsString(message));
                     exchange.respond(CoAP.ResponseCode.CHANGED);
                     changed();
                     getAttributes().clearAttribute("sensor-data");

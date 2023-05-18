@@ -28,7 +28,7 @@ public class Sensor {
     @Transient
     private double humidity;
     @Transient
-    private Date timestamp;
+    private long timestamp;
     @Transient
     private boolean isUpdated;
     @Transient
@@ -45,7 +45,7 @@ public class Sensor {
         this.name = "sensor-" + UUID.randomUUID();
         this.delay = DEFAULT_DELAY;
         this.humidity = humidity;
-        this.timestamp = new Date(System.currentTimeMillis());
+        this.timestamp = System.currentTimeMillis();
         this.isUpdated = false;
         this.isRunning = true;
         this.isAlive = true;
@@ -54,7 +54,7 @@ public class Sensor {
         this.name = name;
         this.delay = DEFAULT_DELAY;
         this.humidity = humidity;
-        this.timestamp = new Date(System.currentTimeMillis());
+        this.timestamp = System.currentTimeMillis();
         this.isUpdated = false;
         this.isRunning = true;
         this.isAlive = true;
@@ -64,7 +64,7 @@ public class Sensor {
         this.name = name;
         this.delay = delay;
         this.humidity = humidity;
-        this.timestamp = new Date(System.currentTimeMillis());
+        this.timestamp = System.currentTimeMillis();
         this.isUpdated = false;
         this.isRunning = true;
         this.isAlive = true;
@@ -102,11 +102,11 @@ public class Sensor {
         this.humidity = humidity;
     }
 
-    public Date getTimestamp() {
+    public long getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(Date timestamp) {
+    public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
 
@@ -150,7 +150,7 @@ public class Sensor {
     public void loadInitData() {
         this.delay = DEFAULT_DELAY;
         this.humidity = (new Random()).nextDouble();
-        this.timestamp = new Date(System.currentTimeMillis());
+        this.timestamp = System.currentTimeMillis();
         this.isUpdated = false;
         this.isRunning = true;
         this.isAlive = true;
