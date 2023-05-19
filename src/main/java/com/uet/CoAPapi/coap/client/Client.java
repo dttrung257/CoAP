@@ -123,15 +123,17 @@ public class Client {
     }
 
     private void sendData() {
+        CoapClient client = null;
         try {
             // System.out.format("Start send data after %d seconds\n", 1);
+            client = new CoapClient("coap://localhost:5683/data-" + this.sensor.getId());
             this.sensor.startGenerateData(this.timeInterval, this.delay);
             if (this.timeInterval > 0) {
                 long endTime = System.currentTimeMillis() + (this.timeInterval + 3000);
                 while (System.currentTimeMillis() < endTime && this.sensor.isAlive()) {
                     if (this.sensor.isUpdated()) {
                         final DataMessage dataMessage = messageMapper.apply(sensor);
-                        this.client.put(mapper.writeValueAsString(dataMessage), MediaTypeRegistry.TEXT_PLAIN);
+                        client.put(mapper.writeValueAsString(dataMessage), MediaTypeRegistry.TEXT_PLAIN);
                         this.sensor.setUpdated(false);
                     }
                 }
@@ -140,7 +142,7 @@ public class Client {
                 while (this.sensor.isAlive()) {
                     if (this.sensor.isUpdated()) {
                         final DataMessage dataMessage = messageMapper.apply(sensor);
-                        this.client.put(mapper.writeValueAsString(dataMessage), MediaTypeRegistry.TEXT_PLAIN);
+                        client.put(mapper.writeValueAsString(dataMessage), MediaTypeRegistry.TEXT_PLAIN);
                         this.sensor.setUpdated(false);
                         startTime = System.currentTimeMillis();
                     }
@@ -152,6 +154,10 @@ public class Client {
             }
         } catch (ConnectorException | IOException e) {
             throw new RuntimeException(e);
+        } finally {
+            if (client != null) {
+                client.shutdown();
+            }
         }
         System.out.println("Sensor id: " + this.sensor.getId() + " stops sending data to gateway");
     }
@@ -180,12 +186,18 @@ public class Client {
     }
 
     public static void main(String[] args) {
-        Sensor sensor = new Sensor(0.5);
-        Sensor sensor1 = new Sensor(0.3);
+        Sensor sensor = new Sensor("sensor-1", DataGenerator.humidityGenerate());
+        Sensor sensor1 = new Sensor("sensor-2", DataGenerator.humidityGenerate());
+        Sensor sensor2 = new Sensor("sensor-3", DataGenerator.humidityGenerate());
+        Sensor sensor3 = new Sensor("sensor-4", DataGenerator.humidityGenerate());
         Client client = new Client(sensor);
         Client client1 = new Client(sensor1);
+        Client client2 = new Client(sensor2);
+        Client client3 = new Client(sensor3);
         client.createConnection();
         client1.createConnection();
+        client2.createConnection();
+        client3.createConnection();
 //        client.startSendData(3600 * 1000, 500);
 //        client1.startSendData(3600 * 1000);
     }

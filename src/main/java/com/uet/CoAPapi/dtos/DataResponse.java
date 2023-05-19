@@ -19,6 +19,4 @@ public class DataResponse {
     private double humidity;
     private String timestamp;
     private long latency;
-    private double usageCpu;
-    private double usageRam;
 }

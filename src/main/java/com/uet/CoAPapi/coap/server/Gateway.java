@@ -27,6 +27,8 @@ public class Gateway extends CoapServer {
     private static final int COAP_PORT = 5683;
     private static final long LIMIT = 100;
     private static final ObjectMapper mapper = new ObjectMapper();
+    private static final Map<Long, DataResource> dataResources = new HashMap<>();
+    private static final String NON_NEGATIVE_INTEGER_REGEX = "^[+]?([1-9]\\d*|0)$";
 
     public Gateway() {
         this.add(new SensorResource("sensors"));
@@ -54,12 +56,46 @@ public class Gateway extends CoapServer {
                 try {
                     Sensor sensor = mapper.readValue(payload, Sensor.class);
                     sensors.put(sensor.getId(), sensor);
+                    DataResource dataResource = new DataResource("data-" + sensor.getId());
+                    dataResources.put(sensor.getId(), dataResource);
+                    getParent().add(dataResource);
                     System.out.println("Sensor id: " + sensor.getId() + " connected to gateway");
                     exchange.respond(CoAP.ResponseCode.CREATED);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             }
+        }
+
+//        @Override
+//        public void handlePUT(CoapExchange exchange) {
+//            exchange.accept();
+//            byte[] payload = exchange.getRequestPayload();
+//            if (payload.length > 0) {
+//                try {
+//                    DataMessage message = mapper.readValue(payload, DataMessage.class);
+//                    message.setLatency(System.currentTimeMillis() - message.getTimestamp());
+//                    getAttributes().addAttribute("sensor-data");
+//                    getAttributes().setAttribute("sensor-data", mapper.writeValueAsString(message));
+//                    exchange.respond(CoAP.ResponseCode.CHANGED);
+//                    changed();
+//                    getAttributes().clearAttribute("sensor-data");
+//                } catch (IOException e) {
+//                    throw new RuntimeException(e);
+//                }
+//            }
+//        }
+    }
+
+    public static class DataResource extends CoapResource {
+        public DataResource(String name) {
+            super(name);
+            this.setObservable(true);
+        }
+
+        @Override
+        public void handleGET(CoapExchange exchange) {
+            exchange.respond(CoAP.ResponseCode.CONTENT, getAttributes().getFirstAttributeValue("sensor-data"));
         }
 
         @Override
@@ -82,6 +118,7 @@ public class Gateway extends CoapServer {
         }
     }
 
+
     public static class ControlResource extends CoapResource {
 
         public ControlResource(String name) {
@@ -98,8 +135,21 @@ public class Gateway extends CoapServer {
         public void handlePOST(CoapExchange exchange) {
             byte[] payload = exchange.getRequestPayload();
             if (payload.length > 0) {
-                getAttributes().addAttribute("data");
-                getAttributes().setAttribute("data", new String(payload, StandardCharsets.UTF_8));
+                try {
+                    ControlMessage controlMessage = mapper.readValue(payload, ControlMessage.class);
+                    getAttributes().addAttribute("data");
+                    getAttributes().setAttribute("data", new String(payload, StandardCharsets.UTF_8));
+                    if (controlMessage.getMessage().equalsIgnoreCase(ControlMessage.TERMINATE_MESSAGE)) {
+                        if (controlMessage.getSensorId().matches(NON_NEGATIVE_INTEGER_REGEX)) {
+                            DataResource dataResource = dataResources.get(Long.parseLong(controlMessage.getSensorId()));
+                            getParent().delete(dataResource);
+                            System.out.println("Remove data resource of sensor id: " + controlMessage.getSensorId());
+                        }
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
             }
             exchange.respond(CoAP.ResponseCode.CREATED, payload);
             changed();

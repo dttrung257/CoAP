@@ -24,10 +24,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/v1/gateway")
@@ -35,87 +42,121 @@ import java.util.Optional;
 public class GatewayController {
     private final SensorRepo sensorRepo;
     private final SensorDtoMapper sensorDtoMapper;
-    private final CoapClient coapClient;
     private final CoapClient manager;
     private static final ObjectMapper mapper = new ObjectMapper();
+
 
     public GatewayController(SensorRepo sensorRepo, SensorDtoMapper sensorDtoMapper) {
         this.sensorRepo = sensorRepo;
         this.sensorDtoMapper = sensorDtoMapper;
-        this.coapClient = new CoapClient("coap://localhost:5683/sensors");
         this.manager = new CoapClient("coap://localhost:5683/control");
     }
 
-    @GetMapping(value = "/data", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<DataResponse> getDataMessages() {
-        ControlMessage controlMessage = new ControlMessage("ALL", ControlMessage.TURN_ON_OPTION);
-        try {
-            manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
-        } catch (ConnectorException | IOException e) {
-            throw new RuntimeException(e);
-        }
-        Flux<CoapResponse> coapFlux = Flux.create(emitter -> {
-            CoapHandler handler = new CoapHandler() {
-                @Override
-                public void onLoad(CoapResponse coapResponse) {
-                    if (coapResponse.getPayload().length > 0) {
-                        emitter.next(coapResponse);
-                    }
-                }
-
-                @Override
-                public void onError() {
-                    emitter.error(new RuntimeException("Failed to receive notification"));
-                }
-            };
-            coapClient.observe(handler);
-        });
-
-        return coapFlux
-                .filter(coapResponse -> coapResponse.getPayload().length > 0)
-                .map(coapResponse -> {
-                    try {
-                        DataMessage dataMessage = mapper.readValue(coapResponse.getPayload(), DataMessage.class);
-                        final DataResponse response = DataResponse.builder()
-                                .id(dataMessage.getId())
-                                .name(dataMessage.getName())
-                                .humidity(dataMessage.getHumidity())
-                                .timestamp(TimeUtil.format(dataMessage.getTimestamp()))
-                                .latency(dataMessage.getLatency())
-                                .usageCpu(GatewayMonitor.getUsageCpu())
-                                .usageRam(GatewayMonitor.getUsageRam())
-                                .build();
-                        System.out.println(response);
-                        return response;
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-    }
+//    @GetMapping(value = "/data", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+//    public Flux<DataResponse> getDataMessages() {
+//        ControlMessage controlMessage = new ControlMessage("ALL", ControlMessage.TURN_ON_OPTION);
+//        try {
+//            manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
+//        } catch (ConnectorException | IOException e) {
+//            throw new RuntimeException(e);
+//        }
+//        return Flux.create(emitter -> {
+//            CoapClient client = new CoapClient("coap://localhost:5683/sensors");
+//            CoapHandler coapHandler = new CoapHandler() {
+//                @Override
+//                public void onLoad(CoapResponse coapResponse) {
+//                    if (coapResponse.getPayload().length > 0) {
+//                        try {
+//                            DataMessage dataMessage = mapper.readValue(coapResponse.getPayload(), DataMessage.class);
+//                            DataResponse response = DataResponse.builder()
+//                                    .id(dataMessage.getId())
+//                                    .name(dataMessage.getName())
+//                                    .humidity(dataMessage.getHumidity())
+//                                    .timestamp(TimeUtil.format(dataMessage.getTimestamp()))
+//                                    .latency(dataMessage.getLatency())
+//                                    .build();
+//                            emitter.next(response);
+//                        } catch (IOException e) {
+//                            emitter.error(e);
+//                        }
+//                    }
+//                }
+//
+//                @Override
+//                public void onError() {
+//                    emitter.error(new RuntimeException("Failed to receive notification"));
+//                }
+//            };
+//            client.observe(coapHandler);
+//        });
+//    }
+//
+//    @GetMapping(value = "/test", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+//    public Flux<DataResponse> test() {
+//        ControlMessage controlMessage = new ControlMessage("ALL", ControlMessage.TURN_ON_OPTION);
+//        try {
+//            manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
+//        } catch (ConnectorException | IOException e) {
+//            throw new RuntimeException(e);
+//        }
+//        CoapClient client = new CoapClient("coap://localhost:5683/sensors");
+//        CoapHandler coapHandler = new CoapHandler() {
+//            @Override
+//            public void onLoad(CoapResponse coapResponse) {
+//                if (coapResponse.getPayload().length > 0) {
+//                    try {
+//                        DataMessage dataMessage = mapper.readValue(coapResponse.getPayload(), DataMessage.class);
+//                        DataResponse response = DataResponse.builder()
+//                                .id(dataMessage.getId())
+//                                .name(dataMessage.getName())
+//                                .humidity(dataMessage.getHumidity())
+//                                .timestamp(TimeUtil.format(dataMessage.getTimestamp()))
+//                                .latency(dataMessage.getLatency())
+//                                .build();
+//                        System.out.println(response);
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }
+//
+//            @Override
+//            public void onError() {
+//                System.out.println("Failed to receive notification");
+//            }
+//        };
+//        client.observe(coapHandler);
+//        return null;
+//    }
 
     @GetMapping(value = "/{id}/data", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<DataResponse> getDataMessagesById(@PathVariable(value = "id", required = true) Long id) {
-        if (!sensorRepo.existsById(id) || CoapConfig.sensors.stream().noneMatch(s -> s.getId() == id)) {
-            throw new SensorNotFoundException("Sensor id: " + id + " not found");
-        }
+    public Flux<DataResponse> getDataMessagesById(@PathVariable("id") Long id) {
         ControlMessage controlMessage = new ControlMessage(id.toString(), ControlMessage.TURN_ON_OPTION);
         try {
             manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
         } catch (ConnectorException | IOException e) {
             throw new RuntimeException(e);
         }
-        Flux<CoapResponse> coapFlux = Flux.create(emitter -> {
-            CoapHandler handler = new CoapHandler() {
+        return Flux.create(emitter -> {
+            CoapClient client = new CoapClient("coap://localhost:5683/data-" + id);
+            CoapHandler coapHandler = new CoapHandler() {
                 @Override
                 public void onLoad(CoapResponse coapResponse) {
                     if (coapResponse.getPayload().length > 0) {
                         try {
                             DataMessage dataMessage = mapper.readValue(coapResponse.getPayload(), DataMessage.class);
                             if (dataMessage.getId() == id) {
-                                emitter.next(coapResponse);
+                                DataResponse response = DataResponse.builder()
+                                        .id(dataMessage.getId())
+                                        .name(dataMessage.getName())
+                                        .humidity(dataMessage.getHumidity())
+                                        .timestamp(TimeUtil.format(dataMessage.getTimestamp()))
+                                        .latency(dataMessage.getLatency())
+                                        .build();
+                                emitter.next(response);
                             }
                         } catch (IOException e) {
-                            throw new RuntimeException(e);
+                            emitter.error(e);
                         }
                     }
                 }
@@ -125,30 +166,28 @@ public class GatewayController {
                     emitter.error(new RuntimeException("Failed to receive notification"));
                 }
             };
-            coapClient.observe(handler);
+            client.observe(coapHandler);
         });
-
-        return coapFlux
-                .filter(coapResponse -> coapResponse.getPayload().length > 0)
-                .map(coapResponse -> {
-                    try {
-                        DataMessage dataMessage = mapper.readValue(coapResponse.getPayload(), DataMessage.class);
-                        final DataResponse response = DataResponse.builder()
-                                .id(dataMessage.getId())
-                                .name(dataMessage.getName())
-                                .humidity(dataMessage.getHumidity())
-                                .timestamp(TimeUtil.format(dataMessage.getTimestamp()))
-                                .latency(dataMessage.getLatency())
-                                .usageCpu(GatewayMonitor.getUsageCpu())
-                                .usageRam(GatewayMonitor.getUsageRam())
-                                .build();
-                        System.out.println(response);
-                        return response;
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
     }
+
+    @GetMapping(value = "/performance", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<Performance> getPerformanceData() {
+        return Flux.create(emitter -> {
+            Scheduler.Worker worker = Schedulers.newSingle("performance-worker").createWorker();
+            worker.schedulePeriodically(() -> {
+                final Performance performance = Performance.builder()
+                        .usageCpu(GatewayMonitor.getUsageCpu())
+                        .usageRam(GatewayMonitor.getUsageRam())
+                        .timestamp(TimeUtil.format(System.currentTimeMillis()))
+                        .build();
+                emitter.next(performance);
+            }, 0, 5, TimeUnit.SECONDS);
+
+            // Đảm bảo hủy tác vụ khi subscriber không còn kết nối
+            emitter.onDispose(worker);
+        });
+    }
+
 
 
     @GetMapping("/max-node")

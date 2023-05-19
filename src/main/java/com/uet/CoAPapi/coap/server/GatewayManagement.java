@@ -2,7 +2,12 @@ package com.uet.CoAPapi.coap.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.uet.CoAPapi.coap.message.ControlMessage;
+import com.uet.CoAPapi.coap.message.DataMessage;
+import com.uet.CoAPapi.dtos.DataResponse;
+import com.uet.CoAPapi.utils.TimeUtil;
 import org.eclipse.californium.core.CoapClient;
+import org.eclipse.californium.core.CoapHandler;
+import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.elements.exception.ConnectorException;
 
@@ -14,6 +19,33 @@ public class GatewayManagement {
     private static final ObjectMapper mapper = new ObjectMapper();
     public static void main(String[] args) {
         CoapClient manager = new CoapClient("coap://localhost:5683/control");
+        CoapClient client = new CoapClient("coap://localhost:5683/sensors");
+        CoapHandler coapHandler = new CoapHandler() {
+            @Override
+            public void onLoad(CoapResponse coapResponse) {
+                if (coapResponse.getPayload().length > 0) {
+                    try {
+                        DataMessage dataMessage = mapper.readValue(coapResponse.getPayload(), DataMessage.class);
+                        DataResponse response = DataResponse.builder()
+                                .name(dataMessage.getName())
+                                .humidity(dataMessage.getHumidity())
+                                .timestamp(TimeUtil.format(dataMessage.getTimestamp()))
+                                .latency(dataMessage.getLatency())
+                                .build();
+                        System.out.println(response);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                }
+            }
+
+            @Override
+            public void onError() {
+
+            }
+        };
+        client.observe(coapHandler);
         Scanner scanner = new Scanner(System.in);
         String command;
 
@@ -33,7 +65,7 @@ public class GatewayManagement {
                     System.out.println("Unknown command");
                     continue;
                 }
-                System.out.println("Enter option (0: START, 1: STOP, 2: RESUME) (QUIT to exit): ");
+                System.out.println("Enter option (0: ON, 1: OFF, 2: TERMINATE) (QUIT to exit): ");
                 command = scanner.nextLine();
                 if (command.equalsIgnoreCase("QUIT")) {
                     break;
