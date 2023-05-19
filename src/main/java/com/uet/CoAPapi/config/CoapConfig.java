@@ -32,8 +32,8 @@ public class CoapConfig {
     }
 
     private void loadMaxNode() {
-        // maxNode = GatewayMonitor.evaluateMaxNode();
-        maxNode = 3;
+        maxNode = GatewayMonitor.evaluateMaxNode();
+        //maxNode = 3;
     }
 
 //    @Bean

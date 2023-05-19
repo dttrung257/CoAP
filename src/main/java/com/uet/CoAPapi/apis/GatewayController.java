@@ -152,7 +152,9 @@ public class GatewayController {
                                         .humidity(dataMessage.getHumidity())
                                         .timestamp(TimeUtil.format(dataMessage.getTimestamp()))
                                         .latency(dataMessage.getLatency())
+                                        .throughput(dataMessage.getThroughput())
                                         .build();
+                                System.out.println(response);
                                 emitter.next(response);
                             }
                         } catch (IOException e) {

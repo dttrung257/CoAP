@@ -14,4 +14,5 @@ public class DataMessage {
     private double humidity;
     private long timestamp;
     private long latency;
+    private double throughput;
 }

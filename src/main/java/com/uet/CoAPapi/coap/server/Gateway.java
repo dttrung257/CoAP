@@ -29,6 +29,8 @@ public class Gateway extends CoapServer {
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final Map<Long, DataResource> dataResources = new HashMap<>();
     private static final String NON_NEGATIVE_INTEGER_REGEX = "^[+]?([1-9]\\d*|0)$";
+    public static double throughput = 0.0;
+    public static long startTime = System.currentTimeMillis();
 
     public Gateway() {
         this.add(new SensorResource("sensors"));
@@ -105,7 +107,15 @@ public class Gateway extends CoapServer {
             if (payload.length > 0) {
                 try {
                     DataMessage message = mapper.readValue(payload, DataMessage.class);
-                    message.setLatency(System.currentTimeMillis() - message.getTimestamp());
+                    long latency = System.currentTimeMillis() - message.getTimestamp();
+                    if (latency <= 0) {
+                        latency = 1;
+                    }
+                    message.setLatency(latency);
+                    System.out.println(payload.length * 8.0);
+                    System.out.println(latency / 1000.0);
+                    System.out.println(payload.length * 8.0 / (latency / 1000.0));
+                    message.setThroughput(payload.length * 8.0 / (latency * 1.0 / 1000));
                     getAttributes().addAttribute("sensor-data");
                     getAttributes().setAttribute("sensor-data", mapper.writeValueAsString(message));
                     exchange.respond(CoAP.ResponseCode.CHANGED);
@@ -162,7 +172,7 @@ public class Gateway extends CoapServer {
         gateway.start();
         System.out.format("Server is running on port %d\n",
                 gateway.getEndpoints().get(0).getAddress().getPort());
-        (new CoapClient("coap://localhost:5683/sensors")).observe(new CoapHandler() {
+        (new CoapClient("coap://localhost:5683/data-1")).observe(new CoapHandler() {
             @Override
             public void onLoad(CoapResponse coapResponse) {
                 if (coapResponse.getPayload().length > 0) {
