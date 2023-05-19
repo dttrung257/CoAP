@@ -3,12 +3,10 @@ package com.uet.CoAPapi.apis;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.uet.CoAPapi.coap.client.Client;
 import com.uet.CoAPapi.coap.client.Sensor;
+import com.uet.CoAPapi.coap.server.GatewayMonitor;
 import com.uet.CoAPapi.config.CoapConfig;
 import com.uet.CoAPapi.dtos.*;
-import com.uet.CoAPapi.exception.CannotDeleteRunningSensorException;
-import com.uet.CoAPapi.exception.SensorAlreadyExistsException;
-import com.uet.CoAPapi.exception.SensorNotFoundException;
-import com.uet.CoAPapi.exception.UnknownSensorStateException;
+import com.uet.CoAPapi.exception.*;
 import com.uet.CoAPapi.mappers.SensorDtoMapper;
 import com.uet.CoAPapi.coap.message.ControlMessage;
 import com.uet.CoAPapi.coap.message.DataMessage;
@@ -52,7 +50,7 @@ public class GatewayController {
     public Flux<DataResponse> getDataMessages() {
         ControlMessage controlMessage = new ControlMessage("ALL", ControlMessage.TURN_ON_OPTION);
         try {
-            this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
+            manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
         } catch (ConnectorException | IOException e) {
             throw new RuntimeException(e);
         }
@@ -60,7 +58,9 @@ public class GatewayController {
             CoapHandler handler = new CoapHandler() {
                 @Override
                 public void onLoad(CoapResponse coapResponse) {
-                    emitter.next(coapResponse);
+                    if (coapResponse.getPayload().length > 0) {
+                        emitter.next(coapResponse);
+                    }
                 }
 
                 @Override
@@ -82,12 +82,78 @@ public class GatewayController {
                                 .humidity(dataMessage.getHumidity())
                                 .timestamp(TimeUtil.format(dataMessage.getTimestamp()))
                                 .latency(dataMessage.getLatency())
+                                .usageCpu(GatewayMonitor.getUsageCpu())
+                                .usageRam(GatewayMonitor.getUsageRam())
                                 .build();
+                        System.out.println(response);
                         return response;
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
                 });
+    }
+
+    @GetMapping(value = "/{id}/data", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<DataResponse> getDataMessagesById(@PathVariable(value = "id", required = true) Long id) {
+        if (!sensorRepo.existsById(id) || CoapConfig.sensors.stream().noneMatch(s -> s.getId() == id)) {
+            throw new SensorNotFoundException("Sensor id: " + id + " not found");
+        }
+        ControlMessage controlMessage = new ControlMessage(id.toString(), ControlMessage.TURN_ON_OPTION);
+        try {
+            manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
+        } catch (ConnectorException | IOException e) {
+            throw new RuntimeException(e);
+        }
+        Flux<CoapResponse> coapFlux = Flux.create(emitter -> {
+            CoapHandler handler = new CoapHandler() {
+                @Override
+                public void onLoad(CoapResponse coapResponse) {
+                    if (coapResponse.getPayload().length > 0) {
+                        try {
+                            DataMessage dataMessage = mapper.readValue(coapResponse.getPayload(), DataMessage.class);
+                            if (dataMessage.getId() == id) {
+                                emitter.next(coapResponse);
+                            }
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+
+                @Override
+                public void onError() {
+                    emitter.error(new RuntimeException("Failed to receive notification"));
+                }
+            };
+            coapClient.observe(handler);
+        });
+
+        return coapFlux
+                .filter(coapResponse -> coapResponse.getPayload().length > 0)
+                .map(coapResponse -> {
+                    try {
+                        DataMessage dataMessage = mapper.readValue(coapResponse.getPayload(), DataMessage.class);
+                        final DataResponse response = DataResponse.builder()
+                                .id(dataMessage.getId())
+                                .name(dataMessage.getName())
+                                .humidity(dataMessage.getHumidity())
+                                .timestamp(TimeUtil.format(dataMessage.getTimestamp()))
+                                .latency(dataMessage.getLatency())
+                                .usageCpu(GatewayMonitor.getUsageCpu())
+                                .usageRam(GatewayMonitor.getUsageRam())
+                                .build();
+                        System.out.println(response);
+                        return response;
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+    }
+
+
+    @GetMapping("/max-node")
+    public ResponseEntity<Long> getMaxNode() {
+        return ResponseEntity.ok(CoapConfig.maxNode);
     }
 
     // Turn off all sensors
@@ -121,6 +187,7 @@ public class GatewayController {
         ControlMessage controlMessage = new ControlMessage("ALL", (long) (sensorDelay.getDelay() * 1000));
         try {
             this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
+            //CoapConfig.sensors.forEach(s -> s.setDelay((long) (sensorDelay.getDelay() * 1000)));
         } catch (ConnectorException | IOException e) {
             throw new RuntimeException(e);
         }
@@ -133,7 +200,7 @@ public class GatewayController {
     @PutMapping("/sensors/{id}/state")
     public ResponseEntity<SensorDto> changeSensorStateById(@PathVariable(value = "id", required = true) Long id,
                                                @RequestBody @Valid SensorState sensorState) {
-        if (!sensorRepo.existsById(id)) {
+        if (!sensorRepo.existsById(id) || CoapConfig.sensors.stream().noneMatch(s -> s.getId() == id)) {
             throw new SensorNotFoundException("Sensor id: " + id + " not found");
         }
         if (sensorState.getState().equalsIgnoreCase(ControlMessage.TURN_ON_MESSAGE)) {
@@ -143,6 +210,7 @@ public class GatewayController {
             } catch (ConnectorException | IOException e) {
                 throw new RuntimeException(e);
             }
+            CoapConfig.sensors.stream().filter(s -> s.getId() == id).toList().get(0).setRunning(true);
         } else if (sensorState.getState().equalsIgnoreCase(ControlMessage.TURN_OFF_MESSAGE)) {
             ControlMessage controlMessage = new ControlMessage(id.toString(), ControlMessage.TURN_OFF_OPTION);
             try {
@@ -150,6 +218,7 @@ public class GatewayController {
             } catch (ConnectorException | IOException e) {
                 throw new RuntimeException(e);
             }
+            CoapConfig.sensors.stream().filter(s -> s.getId() == id).toList().get(0).setRunning(false);
         } else {
             throw new UnknownSensorStateException("Unknown sensor state: " + sensorState.getState());
         }
@@ -179,32 +248,37 @@ public class GatewayController {
     // Create sensor
     @PostMapping("/sensors")
     public ResponseEntity<SensorDto> createSensor(@RequestBody @Valid NewSensor newSensor) {
-        if (sensorRepo.existsByName(newSensor.getName())) {
-            throw new SensorAlreadyExistsException("Sensor name: " + newSensor.getName() + " already exists");
-        }
-        final Sensor sensor = new Sensor();
-        sensor.setName(newSensor.getName());
-        sensor.loadInitData();
-        Client client;
-        if (!CoapConfig.sensors.isEmpty()) {
-            sensor.setDelay(CoapConfig.sensors.get(0).getDelay());
-            client = new Client(sensor);
-            client.setDelay(CoapConfig.sensors.get(0).getDelay());
+        if (CoapConfig.maxNode > CoapConfig.sensors.size()) {
+            if (sensorRepo.existsByName(newSensor.getName()) ||
+                    CoapConfig.sensors.stream().anyMatch(s -> s.getName().equalsIgnoreCase(newSensor.getName()))) {
+                throw new SensorAlreadyExistsException("Sensor name: " + newSensor.getName() + " already exists");
+            }
+            final Sensor sensor = new Sensor();
+            sensor.setName(newSensor.getName());
+            sensor.loadInitData();
+            Client client;
+            if (!CoapConfig.sensors.isEmpty()) {
+                sensor.setDelay(CoapConfig.sensors.get(0).getDelay());
+                client = new Client(sensor);
+                client.setDelay(CoapConfig.sensors.get(0).getDelay());
+            } else {
+                sensor.setDelay(Sensor.DEFAULT_DELAY);
+                client = new Client(sensor);
+                client.setDelay(Sensor.DEFAULT_DELAY);
+            }
+            client.createConnection();
+            CoapConfig.sensors.add(sensor);
+            sensorRepo.save(sensor);
+            ControlMessage controlMessage = new ControlMessage(Long.toString(sensor.getId()), ControlMessage.TURN_ON_OPTION);
+            try {
+                this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
+            } catch (ConnectorException | IOException e) {
+                throw new RuntimeException(e);
+            }
+            return new ResponseEntity<>(sensorDtoMapper.apply(sensor), HttpStatus.CREATED);
         } else {
-            sensor.setDelay(Sensor.DEFAULT_DELAY);
-            client = new Client(sensor);
-            client.setDelay(Sensor.DEFAULT_DELAY);
+            throw new ReachMaxNodeException("Reach max node");
         }
-        client.createConnection();
-        CoapConfig.sensors.add(sensor);
-        sensorRepo.save(sensor);
-        ControlMessage controlMessage = new ControlMessage(Long.toString(sensor.getId()), ControlMessage.TURN_ON_OPTION);
-        try {
-            this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
-        } catch (ConnectorException | IOException e) {
-            throw new RuntimeException(e);
-        }
-        return new ResponseEntity<>(sensorDtoMapper.apply(sensor), HttpStatus.CREATED);
     }
 
     // Rename sensor
@@ -213,16 +287,14 @@ public class GatewayController {
                                                         @RequestBody @Valid SensorName sensorName) {
         final Optional<Sensor> sensorOptional = sensorRepo.findById(id);
         if (CoapConfig.sensors.stream().anyMatch(s -> s.getId() == id) && sensorOptional.isPresent()
-            && CoapConfig.sensors.stream()
-                .noneMatch(s -> s.getId() != id && s.getName().equalsIgnoreCase(sensorName.getName()))) {
+            && sensorRepo.findByNameWithOtherId(id, sensorName.getName()).isEmpty()) {
             CoapConfig.sensors.stream().filter(s -> s.getId() == id).toList().get(0).setName(sensorName.getName());
             final Sensor sensor = sensorOptional.get();
             sensor.setName(sensorName.getName());
             sensorRepo.save(sensor);
             return ResponseEntity.ok(sensorDtoMapper
                     .apply(CoapConfig.sensors.stream().filter(s -> s.getId() == id).toList().get(0)));
-        } else if (CoapConfig.sensors.stream()
-                .anyMatch(s -> s.getId() != id && s.getName().equalsIgnoreCase(sensorName.getName()))) {
+        } else if (sensorRepo.findByNameWithOtherId(id, sensorName.getName()).size() > 0) {
             throw new SensorAlreadyExistsException("Sensor name: " + sensorName.getName() + " already exists");
         } else {
             throw new SensorNotFoundException("Sensor id: " + id + " not found");
@@ -233,7 +305,7 @@ public class GatewayController {
     @DeleteMapping("/sensors/{id}")
     public ResponseEntity<String> deleteSensorById(@PathVariable(value = "id", required = true) Long id) {
         final Optional<Sensor> optionalSensor = sensorRepo.findById(id);
-        if (optionalSensor.isEmpty()) {
+        if (optionalSensor.isEmpty() || CoapConfig.sensors.stream().noneMatch(s -> s.getId() == id)) {
             throw new SensorNotFoundException("Sensor id: " + id + " not found");
         }
         if (CoapConfig.sensors.stream().filter(s -> s.getId() == id).toList().get(0).isRunning()) {

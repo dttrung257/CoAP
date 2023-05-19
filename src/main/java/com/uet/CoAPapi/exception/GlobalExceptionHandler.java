@@ -80,5 +80,16 @@ public class GlobalExceptionHandler {
                 .build();
         return new ResponseEntity<>(ed, HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(ReachMaxNodeException.class)
+    public ResponseEntity<ErrorDetails> handleReachMaxNodeException(ReachMaxNodeException e, WebRequest webRequest) {
+        final ErrorDetails ed = ErrorDetails.builder()
+                .timestamp(new Date())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .message(e.getMessage())
+                .details(webRequest.getDescription(false))
+                .build();
+        return new ResponseEntity<>(ed, HttpStatus.BAD_REQUEST);
+    }
 }
 

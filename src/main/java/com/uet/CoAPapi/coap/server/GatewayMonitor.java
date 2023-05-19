@@ -3,6 +3,7 @@ package com.uet.CoAPapi.coap.server;
 import com.uet.CoAPapi.coap.client.Client;
 import com.uet.CoAPapi.coap.client.DataGenerator;
 import com.uet.CoAPapi.coap.client.Sensor;
+import com.uet.CoAPapi.config.CoapConfig;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GlobalMemory;
@@ -11,20 +12,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GatewayMonitor {
-    private long maxNode;
-    private static List<Client> clients;
+    private static long maxNode = 0;
+    public static List<Client> clients = new ArrayList<>();
 
-    public GatewayMonitor() {
-        maxNode = 0;
-        clients = new ArrayList<>();
+    public static double getUsageCpu() {
+        SystemInfo si = new SystemInfo();
+        CentralProcessor cpu = si.getHardware().getProcessor();
+        return cpu.getSystemCpuLoad(CoapConfig.sensors.get(0).getDelay()) * 100;
     }
 
-    public long evaluateMaxNode() {
+    public static double getUsageRam() {
+        SystemInfo si = new SystemInfo();
+        GlobalMemory memory = si.getHardware().getMemory();
+        return (memory.getTotal() * 1.0 - memory.getAvailable()) / (memory.getTotal()) * 100;
+    }
+
+    public static long evaluateMaxNode() {
         SystemInfo si = new SystemInfo();
         CentralProcessor cpu = si.getHardware().getProcessor();
         GlobalMemory memory = si.getHardware().getMemory();
-        Gateway gateway = new Gateway();
-        gateway.start();
 
         while (true) {
             double cpuUsage = cpu.getSystemCpuLoad(1000) * 100;
@@ -34,7 +40,7 @@ public class GatewayMonitor {
             client.createConnection();
             client.startSendData();
             clients.add(client);
-            this.maxNode++;
+            maxNode++;
             System.out.println("Cpu Usage: " + cpuUsage + "%");
             System.out.println("Ram usage: " + ramUsage + "%");
             if (cpuUsage > 90) {
@@ -49,13 +55,11 @@ public class GatewayMonitor {
         for (Client client : clients) {
             client.stop();
         }
-        gateway.stop();
-        return this.maxNode;
+        return maxNode;
     }
 
     public static void main(String[] args) {
-        GatewayMonitor monitor = new GatewayMonitor();
-        long maxNode = monitor.evaluateMaxNode();
+        long maxNode = evaluateMaxNode();
         System.out.println("Max node: " + maxNode);
     }
 }

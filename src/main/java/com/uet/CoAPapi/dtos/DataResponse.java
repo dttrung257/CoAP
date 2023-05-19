@@ -5,10 +5,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
 @Builder
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 public class DataResponse {
@@ -17,4 +19,6 @@ public class DataResponse {
     private double humidity;
     private String timestamp;
     private long latency;
+    private double usageCpu;
+    private double usageRam;
 }
