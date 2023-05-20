@@ -201,6 +201,10 @@ public class GatewayController {
     }
 
     // Get control messages
+    @GetMapping("/control-messages")
+    public ResponseEntity<List<ControlMessageDto>> getControlMessages() {
+        return ResponseEntity.ok(Gateway.controlMessages.stream().map(controlMessageDtoMapper).toList());
+    }
 
     // Get Max Node
     @GetMapping("/max-node")
