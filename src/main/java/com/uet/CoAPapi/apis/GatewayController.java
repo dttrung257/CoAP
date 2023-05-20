@@ -29,12 +29,8 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
-import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -48,7 +44,9 @@ public class GatewayController {
     private static final ObjectMapper mapper = new ObjectMapper();
 
 
-    public GatewayController(SensorRepo sensorRepo, SensorDtoMapper sensorDtoMapper, Gateway gateway) {
+    public GatewayController(SensorRepo sensorRepo,
+                             SensorDtoMapper sensorDtoMapper,
+                             Gateway gateway) {
         this.sensorRepo = sensorRepo;
         this.sensorDtoMapper = sensorDtoMapper;
         this.gateway = gateway;
@@ -196,8 +194,6 @@ public class GatewayController {
             emitter.onDispose(worker);
         });
     }
-
-
 
     @GetMapping("/max-node")
     public ResponseEntity<Long> getMaxNode() {

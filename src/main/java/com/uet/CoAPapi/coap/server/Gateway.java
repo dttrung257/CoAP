@@ -18,9 +18,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class Gateway extends CoapServer {
@@ -28,6 +26,7 @@ public class Gateway extends CoapServer {
     private static final long LIMIT = 100;
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final Map<Long, DataResource> dataResources = new HashMap<>();
+    public static final List<ControlMessage> controlMessages = new ArrayList<>();
     private static final String NON_NEGATIVE_INTEGER_REGEX = "^[+]?([1-9]\\d*|0)$";
     public static double throughput = 0.0;
     public static long startTime = System.currentTimeMillis();
@@ -148,6 +147,7 @@ public class Gateway extends CoapServer {
             if (payload.length > 0) {
                 try {
                     ControlMessage controlMessage = mapper.readValue(payload, ControlMessage.class);
+                    controlMessages.add(controlMessage);
                     getAttributes().addAttribute("data");
                     getAttributes().setAttribute("data", new String(payload, StandardCharsets.UTF_8));
                     if (controlMessage.getMessage().equalsIgnoreCase(ControlMessage.TERMINATE_MESSAGE)) {
