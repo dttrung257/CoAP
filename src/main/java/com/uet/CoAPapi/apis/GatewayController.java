@@ -160,6 +160,12 @@ public class GatewayController {
                                         .throughput(dataMessage.getThroughput())
                                         .build();
                                 System.out.println(response);
+//                                if (CoapConfig.sensors.stream().filter(s -> s.getId() == id).toList().get(0).isRunning()) {
+//                                    CoapConfig.sensors.stream().filter(s -> s.getId() == id).toList().get(0)
+//                                            .setThroughput(dataMessage.getThroughput());
+//                                } else {
+//                                    CoapConfig.sensors.stream().filter(s -> s.getId() == id).toList().get(0).setThroughput(0);
+//                                }
                                 CoapConfig.sensors.stream().filter(s -> s.getId() == id).toList().get(0)
                                         .setThroughput(dataMessage.getThroughput());
                                 emitter.next(response);
@@ -185,6 +191,11 @@ public class GatewayController {
         return Flux.create(emitter -> {
             Scheduler.Worker worker = Schedulers.newSingle("performance-worker").createWorker();
             worker.schedulePeriodically(() -> {
+                CoapConfig.sensors.forEach(s -> {
+                    if (!s.isRunning()) {
+                        s.setThroughput(0);
+                    }
+                });
                 double totalThroughput = CoapConfig.sensors.stream().mapToDouble(Sensor::getThroughput).sum();
                 final Performance performance = Performance.builder()
                         .usageCpu(GatewayMonitor.getUsageCpu())
