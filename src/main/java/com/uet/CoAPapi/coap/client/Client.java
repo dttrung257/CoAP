@@ -124,7 +124,6 @@ public class Client {
     private void sendData() {
         CoapClient client = null;
         try {
-            // System.out.format("Start send data after %d seconds\n", 1);
             client = new CoapClient("coap://localhost:5683/data-" + this.sensor.getId());
             this.sensor.startGenerateData(this.timeInterval, this.delay);
             if (this.timeInterval > 0) {

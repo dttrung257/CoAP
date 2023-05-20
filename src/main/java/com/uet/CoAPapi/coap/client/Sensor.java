@@ -49,7 +49,7 @@ public class Sensor {
         this.humidity = humidity;
         this.timestamp = System.currentTimeMillis();
         this.isUpdated = false;
-        this.isRunning = false;
+        this.isRunning = true;
         this.isAlive = true;
         this.throughput = 0;
     }
@@ -59,7 +59,7 @@ public class Sensor {
         this.humidity = humidity;
         this.timestamp = System.currentTimeMillis();
         this.isUpdated = false;
-        this.isRunning = false;
+        this.isRunning = true;
         this.isAlive = true;
         this.throughput = 0;
     }
@@ -70,7 +70,7 @@ public class Sensor {
         this.humidity = humidity;
         this.timestamp = System.currentTimeMillis();
         this.isUpdated = false;
-        this.isRunning = false;
+        this.isRunning = true;
         this.isAlive = true;
         this.throughput = 0;
     }
@@ -165,7 +165,7 @@ public class Sensor {
         this.humidity = (new Random()).nextDouble();
         this.timestamp = System.currentTimeMillis();
         this.isUpdated = false;
-        this.isRunning = false;
+        this.isRunning = true;
         this.isAlive = true;
         this.throughput = 0;
     }
