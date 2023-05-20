@@ -109,7 +109,6 @@ public class Client {
                 Thread.sleep(1);
             }
             System.out.println("Sensor id: " + this.sensor.getId() + " stops listening to gateway");
-            // Thread.sleep(7 * 24 * 3600 * 1000);
         } catch (ConnectorException | IOException | InterruptedException e) {
             e.printStackTrace();
         } finally {
