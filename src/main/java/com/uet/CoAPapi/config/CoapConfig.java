@@ -47,6 +47,9 @@ public class CoapConfig {
     @Bean
     public void loadSensors() {
         loadMaxNode();
+        if (maxNode == 0) {
+            maxNode = 1;
+        }
         if (maxNode > 0) {
             sensors = sensorRepo.findAllWithLimit(maxNode);
         } else {

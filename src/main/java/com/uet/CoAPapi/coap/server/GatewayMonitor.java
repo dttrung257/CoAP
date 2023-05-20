@@ -43,11 +43,11 @@ public class GatewayMonitor {
             maxNode++;
             System.out.println("Cpu Usage: " + cpuUsage + "%");
             System.out.println("Ram usage: " + ramUsage + "%");
-            if (cpuUsage > 90) {
+            if (cpuUsage > 95) {
                 System.out.println("Reach max cpu usage");
                 break;
             }
-            if (ramUsage > 90) {
+            if (ramUsage > 97) {
                 System.out.println("Reach max ram usage");
                 break;
             }

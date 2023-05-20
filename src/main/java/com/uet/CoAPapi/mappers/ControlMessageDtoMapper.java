@@ -12,11 +12,16 @@ public class ControlMessageDtoMapper implements Function<ControlMessage, Control
     public ControlMessageDto apply(ControlMessage controlMessage) {
         String controlForSensor = (controlMessage.getSensorId().equalsIgnoreCase("ALL")) ?
                 "All sensor" : "Sensor id: " + controlMessage.getSensorId();
-        String message = switch (controlMessage.getMessage()) {
-            case ControlMessage.TURN_ON_MESSAGE -> " turn on";
-            case ControlMessage.TURN_OFF_MESSAGE -> " turn off";
-            default -> " terminate";
-        };
+        final String message;
+        if (controlMessage.getDelay() == -1) {
+            message = switch (controlMessage.getMessage()) {
+                case ControlMessage.TURN_ON_MESSAGE -> " turn on";
+                case ControlMessage.TURN_OFF_MESSAGE -> " turn off";
+                default -> " terminate";
+            };
+        } else {
+            message = " change speed to " + controlMessage.getDelay() / 1000.0 + " seconds";
+        }
         return ControlMessageDto.builder()
                 .message(controlForSensor + message)
                 .build();

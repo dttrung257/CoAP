@@ -215,7 +215,7 @@ public class GatewayController {
     // Turn off all sensors
     // Turn on all sensors
     @PutMapping("/sensors/state")
-    public ResponseEntity<String> changeSensorState(@RequestBody @Valid SensorState sensorState) {
+    public ResponseEntity<ControlSensorResponse> changeSensorState(@RequestBody @Valid SensorState sensorState) {
         if (sensorState.getState().equalsIgnoreCase(ControlMessage.TURN_ON_MESSAGE)) {
             ControlMessage controlMessage = new ControlMessage("ALL", ControlMessage.TURN_ON_OPTION);
             try {
@@ -223,7 +223,13 @@ public class GatewayController {
             } catch (ConnectorException | IOException e) {
                 throw new RuntimeException(e);
             }
-            return ResponseEntity.ok("Success turn on all sensors");
+            return ResponseEntity.ok(ControlSensorResponse.builder()
+                    .timestamp(TimeUtil.format(System.currentTimeMillis()))
+                    .controlMessageDtos(Gateway.controlMessages.stream().map(controlMessageDtoMapper).toList())
+                    .controlMessage(controlMessageDtoMapper
+                            .apply(Gateway.controlMessages.get(Gateway.controlMessages.size() - 1))
+                            .getMessage())
+                    .build());
         } else if (sensorState.getState().equalsIgnoreCase(ControlMessage.TURN_OFF_MESSAGE)) {
             ControlMessage controlMessage = new ControlMessage("ALL", ControlMessage.TURN_OFF_OPTION);
             try {
@@ -231,7 +237,13 @@ public class GatewayController {
             } catch (ConnectorException | IOException e) {
                 throw new RuntimeException(e);
             }
-            return ResponseEntity.ok("Success turn off all sensors");
+            return ResponseEntity.ok(ControlSensorResponse.builder()
+                    .timestamp(TimeUtil.format(System.currentTimeMillis()))
+                    .controlMessageDtos(Gateway.controlMessages.stream().map(controlMessageDtoMapper).toList())
+                    .controlMessage(controlMessageDtoMapper
+                            .apply(Gateway.controlMessages.get(Gateway.controlMessages.size() - 1))
+                            .getMessage())
+                    .build());
         } else {
             throw new UnknownSensorStateException("Unknown sensor state: " + sensorState.getState());
         }
@@ -239,7 +251,7 @@ public class GatewayController {
 
     // Change speed
     @PutMapping("/sensors/speed")
-    public ResponseEntity<String> changeSpeed(@RequestBody @Valid SensorDelay sensorDelay) {
+    public ResponseEntity<ControlSensorResponse> changeSpeed(@RequestBody @Valid SensorDelay sensorDelay) {
         ControlMessage controlMessage = new ControlMessage("ALL", (long) (sensorDelay.getDelay() * 1000));
         try {
             this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
@@ -247,15 +259,21 @@ public class GatewayController {
         } catch (ConnectorException | IOException e) {
             throw new RuntimeException(e);
         }
-        return ResponseEntity.ok("Change speed successfully");
+        return ResponseEntity.ok(ControlSensorResponse.builder()
+                .timestamp(TimeUtil.format(System.currentTimeMillis()))
+                .controlMessageDtos(Gateway.controlMessages.stream().map(controlMessageDtoMapper).toList())
+                .controlMessage(controlMessageDtoMapper
+                        .apply(Gateway.controlMessages.get(Gateway.controlMessages.size() - 1))
+                        .getMessage())
+                .build());
     }
 
 
     // Turn on sensors by id
     // Turn off sensors by id
     @PutMapping("/sensors/{id}/state")
-    public ResponseEntity<SensorDto> changeSensorStateById(@PathVariable(value = "id", required = true) Long id,
-                                               @RequestBody @Valid SensorState sensorState) {
+    public ResponseEntity<ControlSensorResponse> changeSensorStateById(@PathVariable(value = "id", required = true) Long id,
+                                                                       @RequestBody @Valid SensorState sensorState) {
         if (!sensorRepo.existsById(id) || CoapConfig.sensors.stream().noneMatch(s -> s.getId() == id)) {
             throw new SensorNotFoundException("Sensor id: " + id + " not found");
         }
@@ -280,7 +298,14 @@ public class GatewayController {
         }
         final SensorDto sensorDto = CoapConfig.sensors.stream().filter(s -> s.getId() == id)
                 .map(sensorDtoMapper).toList().get(0);
-        return ResponseEntity.ok(sensorDto);
+        return ResponseEntity.ok(ControlSensorResponse.builder()
+                .timestamp(TimeUtil.format(System.currentTimeMillis()))
+                .controlMessageDtos(Gateway.controlMessages.stream().map(controlMessageDtoMapper).toList())
+                .controlMessage(controlMessageDtoMapper
+                        .apply(Gateway.controlMessages.get(Gateway.controlMessages.size() - 1))
+                        .getMessage())
+                .sensor(sensorDto)
+                .build());
     }
 
 
@@ -343,10 +368,10 @@ public class GatewayController {
     // Rename sensor
     @PutMapping("/sensors/{id}/name")
     public ResponseEntity<SensorDto> changeSensorName(@PathVariable(value = "id", required = true) Long id,
-                                                        @RequestBody @Valid SensorName sensorName) {
+                                                      @RequestBody @Valid SensorName sensorName) {
         final Optional<Sensor> sensorOptional = sensorRepo.findById(id);
         if (CoapConfig.sensors.stream().anyMatch(s -> s.getId() == id) && sensorOptional.isPresent()
-            && sensorRepo.findByNameWithOtherId(id, sensorName.getName()).isEmpty()) {
+                && sensorRepo.findByNameWithOtherId(id, sensorName.getName()).isEmpty()) {
             CoapConfig.sensors.stream().filter(s -> s.getId() == id).toList().get(0).setName(sensorName.getName());
             final Sensor sensor = sensorOptional.get();
             sensor.setName(sensorName.getName());
@@ -362,7 +387,7 @@ public class GatewayController {
 
     // Delete sensor
     @DeleteMapping("/sensors/{id}")
-    public ResponseEntity<String> deleteSensorById(@PathVariable(value = "id", required = true) Long id) {
+    public ResponseEntity<ControlSensorResponse> deleteSensorById(@PathVariable(value = "id", required = true) Long id) {
         final Optional<Sensor> optionalSensor = sensorRepo.findById(id);
         if (optionalSensor.isEmpty() || CoapConfig.sensors.stream().noneMatch(s -> s.getId() == id)) {
             throw new SensorNotFoundException("Sensor id: " + id + " not found");
@@ -378,7 +403,13 @@ public class GatewayController {
         }
         CoapConfig.sensors.removeIf(s -> s.getId() == id);
         sensorRepo.delete(optionalSensor.get());
-        return ResponseEntity.ok("Delete sensor id: " + id + " successfully");
+        return ResponseEntity.ok(ControlSensorResponse.builder()
+                .timestamp(TimeUtil.format(System.currentTimeMillis()))
+                .controlMessageDtos(Gateway.controlMessages.stream().map(controlMessageDtoMapper).toList())
+                .controlMessage(controlMessageDtoMapper
+                        .apply(Gateway.controlMessages.get(Gateway.controlMessages.size() - 1))
+                        .getMessage())
+                .build());
     }
 
 }
