@@ -8,6 +8,7 @@ import com.uet.CoAPapi.coap.server.GatewayMonitor;
 import com.uet.CoAPapi.config.CoapConfig;
 import com.uet.CoAPapi.dtos.*;
 import com.uet.CoAPapi.exception.*;
+import com.uet.CoAPapi.mappers.ControlMessageDtoMapper;
 import com.uet.CoAPapi.mappers.SensorDtoMapper;
 import com.uet.CoAPapi.coap.message.ControlMessage;
 import com.uet.CoAPapi.coap.message.DataMessage;
@@ -39,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 public class GatewayController {
     private final SensorRepo sensorRepo;
     private final SensorDtoMapper sensorDtoMapper;
+    private final ControlMessageDtoMapper controlMessageDtoMapper;
     private final CoapClient manager;
     private final Gateway gateway;
     private static final ObjectMapper mapper = new ObjectMapper();
@@ -46,9 +48,11 @@ public class GatewayController {
 
     public GatewayController(SensorRepo sensorRepo,
                              SensorDtoMapper sensorDtoMapper,
+                             ControlMessageDtoMapper controlMessageDtoMapper,
                              Gateway gateway) {
         this.sensorRepo = sensorRepo;
         this.sensorDtoMapper = sensorDtoMapper;
+        this.controlMessageDtoMapper = controlMessageDtoMapper;
         this.gateway = gateway;
         this.manager = new CoapClient("coap://localhost:5683/control");
     }
@@ -175,6 +179,7 @@ public class GatewayController {
         });
     }
 
+    // Get performance
     @GetMapping(value = "/performance", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<Performance> getPerformanceData() {
         return Flux.create(emitter -> {
@@ -195,6 +200,9 @@ public class GatewayController {
         });
     }
 
+    // Get control messages
+
+    // Get Max Node
     @GetMapping("/max-node")
     public ResponseEntity<Long> getMaxNode() {
         return ResponseEntity.ok(CoapConfig.maxNode);
