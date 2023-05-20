@@ -37,6 +37,8 @@ public class Sensor {
     private boolean isRunning;
     @Transient
     private boolean isAlive;
+    @Transient
+    private double throughput;
 
     public Sensor() {
     }
@@ -49,6 +51,7 @@ public class Sensor {
         this.isUpdated = false;
         this.isRunning = true;
         this.isAlive = true;
+        this.throughput = 0;
     }
     public Sensor(String name, double humidity) {
         this.name = name;
@@ -58,6 +61,7 @@ public class Sensor {
         this.isUpdated = false;
         this.isRunning = true;
         this.isAlive = true;
+        this.throughput = 0;
     }
 
     public Sensor(String name, double humidity, long delay) {
@@ -68,6 +72,7 @@ public class Sensor {
         this.isUpdated = false;
         this.isRunning = true;
         this.isAlive = true;
+        this.throughput = 0;
     }
 
     public long getId() {
@@ -134,6 +139,14 @@ public class Sensor {
         isAlive = alive;
     }
 
+    public double getThroughput() {
+        return throughput;
+    }
+
+    public void setThroughput(double throughput) {
+        this.throughput = throughput;
+    }
+
     @Override
     public String toString() {
         return "Sensor{" +
@@ -154,6 +167,7 @@ public class Sensor {
         this.isUpdated = false;
         this.isRunning = true;
         this.isAlive = true;
+        this.throughput = 0;
     }
 
     public void startGenerateData() {

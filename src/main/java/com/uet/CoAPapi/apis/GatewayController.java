@@ -3,6 +3,7 @@ package com.uet.CoAPapi.apis;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.uet.CoAPapi.coap.client.Client;
 import com.uet.CoAPapi.coap.client.Sensor;
+import com.uet.CoAPapi.coap.server.Gateway;
 import com.uet.CoAPapi.coap.server.GatewayMonitor;
 import com.uet.CoAPapi.config.CoapConfig;
 import com.uet.CoAPapi.dtos.*;
@@ -43,12 +44,14 @@ public class GatewayController {
     private final SensorRepo sensorRepo;
     private final SensorDtoMapper sensorDtoMapper;
     private final CoapClient manager;
+    private final Gateway gateway;
     private static final ObjectMapper mapper = new ObjectMapper();
 
 
-    public GatewayController(SensorRepo sensorRepo, SensorDtoMapper sensorDtoMapper) {
+    public GatewayController(SensorRepo sensorRepo, SensorDtoMapper sensorDtoMapper, Gateway gateway) {
         this.sensorRepo = sensorRepo;
         this.sensorDtoMapper = sensorDtoMapper;
+        this.gateway = gateway;
         this.manager = new CoapClient("coap://localhost:5683/control");
     }
 
@@ -155,6 +158,8 @@ public class GatewayController {
                                         .throughput(dataMessage.getThroughput())
                                         .build();
                                 System.out.println(response);
+                                CoapConfig.sensors.stream().filter(s -> s.getId() == id).toList().get(0)
+                                        .setThroughput(dataMessage.getThroughput());
                                 emitter.next(response);
                             }
                         } catch (IOException e) {
@@ -177,10 +182,12 @@ public class GatewayController {
         return Flux.create(emitter -> {
             Scheduler.Worker worker = Schedulers.newSingle("performance-worker").createWorker();
             worker.schedulePeriodically(() -> {
+                double totalThroughput = CoapConfig.sensors.stream().mapToDouble(Sensor::getThroughput).sum();
                 final Performance performance = Performance.builder()
                         .usageCpu(GatewayMonitor.getUsageCpu())
                         .usageRam(GatewayMonitor.getUsageRam())
                         .timestamp(TimeUtil.format(System.currentTimeMillis()))
+                        .throughput(totalThroughput)
                         .build();
                 emitter.next(performance);
             }, 0, 5, TimeUnit.SECONDS);
@@ -294,7 +301,8 @@ public class GatewayController {
                     CoapConfig.sensors.stream().anyMatch(s -> s.getName().equalsIgnoreCase(newSensor.getName()))) {
                 throw new SensorAlreadyExistsException("Sensor name: " + newSensor.getName() + " already exists");
             }
-            final Sensor sensor = new Sensor();
+
+            Sensor sensor = new Sensor();
             sensor.setName(newSensor.getName());
             sensor.loadInitData();
             Client client;
@@ -307,9 +315,11 @@ public class GatewayController {
                 client = new Client(sensor);
                 client.setDelay(Sensor.DEFAULT_DELAY);
             }
+            sensor = sensorRepo.save(sensor);
+            gateway.createResource("data-" + sensor.getId());
+            System.out.println("Create data resource for sensor id: " + sensor.getId());
             client.createConnection();
             CoapConfig.sensors.add(sensor);
-            sensorRepo.save(sensor);
             ControlMessage controlMessage = new ControlMessage(Long.toString(sensor.getId()), ControlMessage.TURN_ON_OPTION);
             try {
                 this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);

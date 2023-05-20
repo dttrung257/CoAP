@@ -89,6 +89,10 @@ public class Gateway extends CoapServer {
 //        }
     }
 
+    public void createResource(String name) {
+        this.add(new DataResource(name));
+    }
+
     public static class DataResource extends CoapResource {
         public DataResource(String name) {
             super(name);
@@ -112,9 +116,6 @@ public class Gateway extends CoapServer {
                         latency = 1;
                     }
                     message.setLatency(latency);
-                    System.out.println(payload.length * 8.0);
-                    System.out.println(latency / 1000.0);
-                    System.out.println(payload.length * 8.0 / (latency / 1000.0));
                     message.setThroughput(payload.length * 8.0 / (latency * 1.0 / 1000));
                     getAttributes().addAttribute("sensor-data");
                     getAttributes().setAttribute("sensor-data", mapper.writeValueAsString(message));

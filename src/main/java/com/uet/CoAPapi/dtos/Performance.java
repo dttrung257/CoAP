@@ -10,5 +10,6 @@ import lombok.*;
 public class Performance {
     private double usageCpu;
     private double usageRam;
+    private double throughput;
     private String timestamp;
 }
