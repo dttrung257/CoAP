@@ -11,7 +11,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SensorDelay {
-    @NotNull(message = "delay is mandatory")
-    @DecimalMin(value = "1.0", message = "Min speed is 1.0 seconds")
-    private double delay;
+    @Min(value = 1000)
+    private long delay;
 }

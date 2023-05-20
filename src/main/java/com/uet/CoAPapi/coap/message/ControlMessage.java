@@ -13,6 +13,7 @@ public class ControlMessage {
     private int option;
     private long delay;
     private String message;
+    private long timestamp;
 
     public ControlMessage() {
     }
@@ -30,6 +31,7 @@ public class ControlMessage {
         this.option = option;
         this.delay = delay;
         setMessageFromOption(this.option);
+        this.timestamp = System.currentTimeMillis();
     }
 
     public String getSensorId() {
@@ -63,6 +65,10 @@ public class ControlMessage {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
     }
 
     private void setMessageFromOption(int option) {

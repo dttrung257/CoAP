@@ -263,10 +263,10 @@ public class GatewayController {
     // Change speed
     @PutMapping("/sensors/speed")
     public ResponseEntity<ControlSensorResponse> changeSpeed(@RequestBody @Valid SensorDelay sensorDelay) {
-        ControlMessage controlMessage = new ControlMessage("ALL", (long) (sensorDelay.getDelay() * 1000));
+        ControlMessage controlMessage = new ControlMessage("ALL", sensorDelay.getDelay());
         try {
             this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
-            //CoapConfig.sensors.forEach(s -> s.setDelay((long) (sensorDelay.getDelay() * 1000)));
+            //CoapConfig.sensors.forEach(s -> s.setDelay(sensorDelay.getDelay()));
         } catch (ConnectorException | IOException e) {
             throw new RuntimeException(e);
         }
