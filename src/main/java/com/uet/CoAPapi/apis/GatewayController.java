@@ -193,7 +193,7 @@ public class GatewayController {
                         .throughput(totalThroughput)
                         .build();
                 emitter.next(performance);
-            }, 0, 5, TimeUnit.SECONDS);
+            }, 0, CoapConfig.sensors.get(0).getDelay() / 1000, TimeUnit.SECONDS);
 
             // Đảm bảo hủy tác vụ khi subscriber không còn kết nối
             emitter.onDispose(worker);
@@ -201,6 +201,10 @@ public class GatewayController {
     }
 
     // Get control messages
+    @GetMapping("/control-messages")
+    public ResponseEntity<List<ControlMessageDto>> getControlMessages() {
+        return ResponseEntity.ok(Gateway.controlMessages.stream().map(controlMessageDtoMapper).toList());
+    }
 
     // Get Max Node
     @GetMapping("/max-node")
