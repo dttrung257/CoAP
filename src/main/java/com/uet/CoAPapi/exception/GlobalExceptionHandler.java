@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 
 import java.util.Date;
+import java.util.concurrent.RejectedExecutionException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {

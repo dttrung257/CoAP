@@ -17,6 +17,7 @@ import org.springframework.context.annotation.Configuration;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.RejectedExecutionException;
 
 @Configuration
 @RequiredArgsConstructor
@@ -33,7 +34,6 @@ public class CoapConfig {
 
     private void loadMaxNode() {
         maxNode = GatewayMonitor.evaluateMaxNode();
-        //maxNode = 3;
     }
 
 //    @Bean
@@ -55,10 +55,12 @@ public class CoapConfig {
         } else {
             sensors = sensorRepo.findAll();
         }
-        sensors.forEach(Sensor::loadInitData);
-        sensors.forEach(System.out::println);
-        sensors.forEach(s -> {
-            (new Client(s)).createConnection();
-        });
+        if (sensors.size() > 0) {
+            sensors.forEach(Sensor::loadInitData);
+            sensors.forEach(System.out::println);
+            sensors.forEach(s -> {
+                (new Client(s)).createConnection();
+            });
+        }
     }
 }

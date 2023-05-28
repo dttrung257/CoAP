@@ -136,6 +136,7 @@ public class GatewayController {
 
     @GetMapping(value = "/{id}/data", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<DataResponse> getDataMessagesById(@PathVariable("id") Long id) {
+        System.out.println("Sensor id: " + id);
         ControlMessage controlMessage = new ControlMessage(id.toString(), ControlMessage.TURN_ON_OPTION);
         try {
             manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
@@ -175,7 +176,6 @@ public class GatewayController {
                         }
                     }
                 }
-
                 @Override
                 public void onError() {
                     emitter.error(new RuntimeException("Failed to receive notification"));
@@ -266,7 +266,6 @@ public class GatewayController {
         ControlMessage controlMessage = new ControlMessage("ALL", sensorDelay.getDelay());
         try {
             this.manager.post(mapper.writeValueAsString(controlMessage), MediaTypeRegistry.TEXT_PLAIN);
-            //CoapConfig.sensors.forEach(s -> s.setDelay(sensorDelay.getDelay()));
         } catch (ConnectorException | IOException e) {
             throw new RuntimeException(e);
         }
